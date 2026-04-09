@@ -8,14 +8,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/bofh69/spoolman2slicer:latest #use :stage for the current 'main' branche or :latest for the latest stable release
+    image: ghcr.io/bofh69/spoolman2slicer:latest
     container_name: spoolman2slicer
     restart: unless-stopped
     environment:
-    #---------Update the following depending on your needs---------
-      - SPOOLMAN_URL=
+      # Required settings
+      - DIR=/configs
+      - URL=http://spoolman.local:7912
       - SLICER=prusaslicer
+      
+      # Optional operational settings
+      - UPDATES=true            # Continuous monitoring mode (-U)
+      - DELETE_ALL=false        # Clear config dir on start (-D)
+      - VERBOSE=false           # Debug logging (-v)
+      - VARIANTS=               # Comma-separated variant list (-V)
+      - CREATE_PER_SPOOL=       # Options: all, least-left, most-recent (--create-per-spool)
     volumes:
       - ./configs:/configs
-    #--------Use this for advanced CLI arguments (adapt as needed):------------------
-    #entrypoint: [ "sh", "-c", "spoolman2slicer -U -d /configs -s ${SLICER} -u ${SPOOLMAN_URL}" ]
