@@ -67,7 +67,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
 
-# Directory is no longer 'required' in argparse to allow the environment variable to fulfill it
+# Directory is no longer 'required' in argparse to allow environment variable DIR to suffice
 parser.add_argument(
     "-d",
     "--dir",
@@ -128,12 +128,17 @@ parser.add_argument(
     "--create-per-spool",
     choices=["all", "least-left", "most-recent"],
     default=os.environ.get("CREATE_PER_SPOOL"),
-    help="create one output file per spool instead of per filament (Env: CREATE_PER_SPOOL)",
+    help=(
+        "create one output file per spool instead of per filament (Env: CREATE_PER_SPOOL). "
+        "'all': one file per spool. "
+        "'least-left': one file per filament for the spool having the least filament left. "
+        "'most-recent': one file per filament for the spool being most recently used."
+    ),
 )
 
 args = parser.parse_args()
 
-# Manual validation for the output directory
+# Manual validation to ensure a directory is provided via either CLI or Env
 if not args.dir:
     parser.error("the following arguments are required: -d/--dir (or set DIR environment variable)")
 
