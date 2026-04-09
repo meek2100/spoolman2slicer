@@ -98,7 +98,10 @@ parser.add_argument(
     "--updates",
     action="store_true",
     default=get_env_bool("UPDATES", False),
-    help="keep running and update filament configs if they're updated in Spoolman (Env: UPDATES=true)",
+    help=(
+        "keep running and update filament configs if they're updated in Spoolman "
+        "(Env: UPDATES=true)"
+    ),
 )
 
 parser.add_argument(
