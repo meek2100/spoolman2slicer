@@ -54,12 +54,22 @@ PRUSASLICER = "prusaslicer"
 SLICER = "slic3r"
 SUPERSLICER = "superslicer"
 
+
 def get_env_bool(name, default=False):
-    """Helper to parse boolean environment variables."""
+    """Helper to parse boolean environment variables with explicit validation."""
     val = os.environ.get(name)
     if val is None:
         return default
-    return val.lower() in ("true", "1", "yes", "on")
+    val_lower = val.lower()
+    if val_lower in ("true", "1", "yes", "on"):
+        return True
+    if val_lower in ("false", "0", "no", "off"):
+        return False
+    raise ValueError(
+        f"Invalid boolean environment variable {name}: {val!r}. "
+        "Use: true/false, 1/0, yes/no, or on/off."
+    )
+
 
 parser = argparse.ArgumentParser(
     description="Fetches data from Spoolman and creates slicer filament config files.",
