@@ -15,7 +15,6 @@
 # ]
 # ///
 
-
 """
 Program to load filaments from Spoolman and create slicer filament configuration.
 """
@@ -55,32 +54,62 @@ PRUSASLICER = "prusaslicer"
 SLICER = "slic3r"
 SUPERSLICER = "superslicer"
 
+
+def get_env_bool(name, default=False):
+    """Helper to parse boolean environment variables with explicit validation."""
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    val_lower = val.lower()
+    if val_lower in ("true", "1", "yes", "on"):
+        return True
+    if val_lower in ("false", "0", "no", "off"):
+        return False
+    raise ValueError(
+        f"Invalid boolean environment variable {name}: {val!r}. "
+        "Use: true/false, 1/0, yes/no, or on/off."
+    )
+
+
 parser = argparse.ArgumentParser(
     description="Fetches data from Spoolman and creates slicer filament config files.",
 )
 
+
+def get_arg_default(name, default_val):
+    """Safely fetch boolean defaults from environment for argparse."""
+    try:
+        return get_env_bool(name, default_val)
+    except ValueError as err:
+        parser.error(str(err))
+        return None  # Satisfies pylint R1710; parser.error calls sys.exit
+
+
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
+
 parser.add_argument(
     "-d",
     "--dir",
     metavar="DIR",
-    required=True,
+    default=os.environ.get("DIR"),
     help="the slicer's filament config dir",
 )
 
 parser.add_argument(
     "-s",
     "--slicer",
-    default=SUPERSLICER,
+    type=str.lower,
+    default=os.environ.get("SLICER", SUPERSLICER).lower(),
     choices=[ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER],
     help="the slicer",
 )
 
+# Backwards compatibility: checks URL first, then SPOOLMAN_URL
 parser.add_argument(
     "-u",
     "--url",
     metavar="URL",
-    default="http://localhost:7912",
+    default=os.environ.get("URL", os.environ.get("SPOOLMAN_URL", "http://localhost:7912")),
     help="URL for the Spoolman installation",
 )
 
@@ -88,6 +117,7 @@ parser.add_argument(
     "-U",
     "--updates",
     action="store_true",
+    default=get_arg_default("UPDATES", False),
     help="keep running and update filament configs if they're updated in Spoolman",
 )
 
@@ -95,6 +125,7 @@ parser.add_argument(
     "-v",
     "--verbose",
     action="store_true",
+    default=get_arg_default("VERBOSE", False),
     help="verbose output",
 )
 
@@ -102,7 +133,7 @@ parser.add_argument(
     "-V",
     "--variants",
     metavar="VALUE1,VALUE2..",
-    default="",
+    default=os.environ.get("VARIANTS", ""),
     help="write one template per value, separated by comma",
 )
 
@@ -110,19 +141,48 @@ parser.add_argument(
     "-D",
     "--delete-all",
     action="store_true",
+    default=get_arg_default("DELETE_ALL", False),
     help="delete all filament configs before adding existing ones",
 )
 
 parser.add_argument(
     "--create-per-spool",
+    type=str.lower,
     choices=["all", "least-left", "most-recent"],
-    help="create one output file per spool instead of per filament. "
-    "'all': one file per spool. "
-    "'least-left': one file per filament for the spool having the least filament left. "
-    "'most-recent': one file per filament for the spool being most recently used.",
+    default=(
+        os.environ.get("CREATE_PER_SPOOL").lower()
+        if os.environ.get("CREATE_PER_SPOOL")
+        else None
+    ),
+    help=(
+        "create one output file per spool instead of per filament. "
+        "'all': one file per spool. "
+        "'least-left': one file per filament for the spool having the least "
+        "filament left. "
+        "'most-recent': one file per filament for the spool being most "
+        "recently used."
+    ),
 )
 
 args = parser.parse_args()
+
+# Explicit validation for settings that may have come from environment variables
+if not args.dir:
+    parser.error("the following arguments are required: -d/--dir (or set DIR environment variable)")
+
+valid_slicers = [ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER]
+if args.slicer not in valid_slicers:
+    parser.error(
+        f"argument -s/--slicer: invalid choice: {args.slicer!r} "
+        f"(choose from {valid_slicers})"
+    )
+
+valid_spool_modes = [None, "all", "least-left", "most-recent"]
+if args.create_per_spool not in valid_spool_modes:
+    parser.error(
+        f"argument --create-per-spool: invalid choice: {args.create_per_spool!r} "
+        "(choose from ['all', 'least-left', 'most-recent'])"
+    )
 
 config_dir = user_config_dir(appname="spoolman2slicer", appauthor=False, roaming=True)
 template_path = os.path.join(config_dir, f"templates-{args.slicer}")
@@ -430,8 +490,25 @@ def get_default_template_for_suffix(suffix):
     return f"{DEFAULT_TEMPLATE_PREFIX}{suffix}{DEFAULT_TEMPLATE_SUFFIX}"
 
 
+def is_managed_file(filepath):
+    """
+    Check if the file was created by this tool by looking for its signature.
+    This prevents deleting manual profiles or system configs.
+    """
+    if not os.path.isfile(filepath):
+        return False
+    try:
+        # Read the first 2KB to check for the signature
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read(2048).lower()
+            # This matches both JSON comments and INI headers
+            return "generated by spoolman2slicer" in content
+    except Exception:  # pylint: disable=broad-exception-caught
+        return False
+
+
 def delete_filament(filament, is_update=False):
-    """Delete the filament's file if no longer in use"""
+    """Delete the filament's file if no longer in use and managed by this tool"""
     filename = get_cached_filename_from_filaments_id(filament)
 
     if filename not in filename_usage:
@@ -445,18 +522,25 @@ def delete_filament(filament, is_update=False):
         new_filename = get_filament_filename(filament)
 
     if filename != new_filename:
-        print(f"Deleting: {filename}")
-        os.remove(filename)
+        # Safety check: only delete if the tool's signature is found
+        if is_managed_file(filename):
+            print(f"Deleting managed config: {filename}")
+            os.remove(filename)
+        else:
+            _log_info(f"Skipping deletion of non-managed file: {filename}")
 
 
 def delete_all_filaments():
-    """Delete all config files in the filament dir"""
+    """Delete all config files in the filament dir that are managed by this tool"""
     for filename in os.listdir(args.dir):
         for suffix in get_config_suffix():
             if filename.endswith("." + suffix):
-                filename = args.dir + "/" + filename
-                print(f"Deleting: {filename}")
-                os.remove(filename)
+                filepath = args.dir.removesuffix("/") + "/" + filename
+                if is_managed_file(filepath):
+                    print(f"Deleting managed file: {filepath}")
+                    os.remove(filepath)
+                else:
+                    _log_debug(f"Skipping non-managed file: {filepath}")
 
 
 def write_filament(filament):
