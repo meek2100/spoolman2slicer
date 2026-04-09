@@ -34,5 +34,6 @@ jobs:
       if: matrix.python-version == '3.12'
       with:
         files: ./coverage.xml
-        use_oidc: true  # Secure authentication without tokens
+        use_oidc: true
+        slug: ${{ github.repository }}  # Explicitly provide the slug to fix the upload URL
         fail_ci_if_error: true
