@@ -78,7 +78,8 @@ parser.add_argument(
 parser.add_argument(
     "-s",
     "--slicer",
-    default=os.environ.get("SLICER", SUPERSLICER),
+    type=str.lower,
+    default=os.environ.get("SLICER", SUPERSLICER).lower(),
     choices=[ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER],
     help="the slicer",
 )
@@ -126,8 +127,13 @@ parser.add_argument(
 
 parser.add_argument(
     "--create-per-spool",
+    type=str.lower,
     choices=["all", "least-left", "most-recent"],
-    default=os.environ.get("CREATE_PER_SPOOL"),
+    default=(
+        os.environ.get("CREATE_PER_SPOOL").lower()
+        if os.environ.get("CREATE_PER_SPOOL")
+        else None
+    ),
     help=(
         "create one output file per spool instead of per filament. "
         "'all': one file per spool. "
@@ -147,7 +153,8 @@ if not args.dir:
 valid_slicers = [ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER]
 if args.slicer not in valid_slicers:
     parser.error(
-        f"argument -s/--slicer: invalid choice: {args.slicer!r} (choose from {valid_slicers})"
+        f"argument -s/--slicer: invalid choice: {args.slicer!r} "
+        f"(choose from {valid_slicers})"
     )
 
 valid_spool_modes = [None, "all", "least-left", "most-recent"]
