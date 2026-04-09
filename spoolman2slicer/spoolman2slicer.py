@@ -75,6 +75,15 @@ parser = argparse.ArgumentParser(
     description="Fetches data from Spoolman and creates slicer filament config files.",
 )
 
+
+def get_arg_default(name, default_val):
+    """Safely fetch boolean defaults from environment for argparse."""
+    try:
+        return get_env_bool(name, default_val)
+    except ValueError as err:
+        parser.error(str(err))
+
+
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
 
 parser.add_argument(
@@ -107,7 +116,7 @@ parser.add_argument(
     "-U",
     "--updates",
     action="store_true",
-    default=get_env_bool("UPDATES", False),
+    default=get_arg_default("UPDATES", False),
     help="keep running and update filament configs if they're updated in Spoolman",
 )
 
@@ -115,7 +124,7 @@ parser.add_argument(
     "-v",
     "--verbose",
     action="store_true",
-    default=get_env_bool("VERBOSE", False),
+    default=get_arg_default("VERBOSE", False),
     help="verbose output",
 )
 
@@ -131,7 +140,7 @@ parser.add_argument(
     "-D",
     "--delete-all",
     action="store_true",
-    default=get_env_bool("DELETE_ALL", False),
+    default=get_arg_default("DELETE_ALL", False),
     help="delete all filament configs before adding existing ones",
 )
 
