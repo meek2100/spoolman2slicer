@@ -29,7 +29,7 @@ USER spoolman
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV SLICER=orcaslicer
+ENV SLICER=prusaslicer
 ENV SPOOLMAN_URL=http://localhost:7912
 
 # Launch the service with the internal configs directory
