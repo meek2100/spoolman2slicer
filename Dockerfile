@@ -34,5 +34,4 @@ ENV DELETE_ALL=false
 ENV VERBOSE=false
 
 # 6. Launch the service
-# The application now natively reads the environment variables defined above
 ENTRYPOINT [ "spoolman2slicer" ]
