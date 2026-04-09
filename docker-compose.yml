@@ -14,7 +14,7 @@ services:
     environment:
       # Required settings
       - DIR=/configs
-      - URL=http://spoolman.local:7912
+      - URL=http://spoolman.local:7912  # Supports SPOOLMAN_URL for compatibility
       - SLICER=prusaslicer
       
       # Optional operational settings
