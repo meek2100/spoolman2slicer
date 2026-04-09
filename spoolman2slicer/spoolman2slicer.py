@@ -67,7 +67,6 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
 
-# Directory defaults to DIR env var but is no longer 'required' in argparse
 parser.add_argument(
     "-d",
     "--dir",
@@ -132,16 +131,29 @@ parser.add_argument(
     help=(
         "create one output file per spool instead of per filament. "
         "'all': one file per spool. "
-        "'least-left': one file per filament for the spool having the least filament left. "
-        "'most-recent': one file per filament for the spool being most recently used."
+        "'least-left': one file per filament for the spool having the least "
+        "filament left. "
+        "'most-recent': one file per filament for the spool being most "
+        "recently used."
     ),
 )
 
 args = parser.parse_args()
 
-# Manual validation to ensure a directory is provided via either CLI or Env
+# Explicit validation for settings that may have come from environment variables
 if not args.dir:
     parser.error("the following arguments are required: -d/--dir (or set DIR environment variable)")
+
+valid_slicers = [ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER]
+if args.slicer not in valid_slicers:
+    parser.error(f"argument -s/--slicer: invalid choice: {args.slicer!r} (choose from {valid_slicers})")
+
+valid_spool_modes = [None, "all", "least-left", "most-recent"]
+if args.create_per_spool not in valid_spool_modes:
+    parser.error(
+        f"argument --create-per-spool: invalid choice: {args.create_per_spool!r} "
+        "(choose from ['all', 'least-left', 'most-recent'])"
+    )
 
 config_dir = user_config_dir(appname="spoolman2slicer", appauthor=False, roaming=True)
 template_path = os.path.join(config_dir, f"templates-{args.slicer}")
