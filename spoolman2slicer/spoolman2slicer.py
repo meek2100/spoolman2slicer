@@ -146,7 +146,9 @@ if not args.dir:
 
 valid_slicers = [ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER]
 if args.slicer not in valid_slicers:
-    parser.error(f"argument -s/--slicer: invalid choice: {args.slicer!r} (choose from {valid_slicers})")
+    parser.error(
+        f"argument -s/--slicer: invalid choice: {args.slicer!r} (choose from {valid_slicers})"
+    )
 
 valid_spool_modes = [None, "all", "least-left", "most-recent"]
 if args.create_per_spool not in valid_spool_modes:
