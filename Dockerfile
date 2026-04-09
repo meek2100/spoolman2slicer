@@ -13,7 +13,6 @@ COPY . .
 RUN pip install --no-cache-dir .
 
 # 3. Pre-seed the configuration directory with templates
-# The script expects templates in $HOME/.config/spoolman2slicer/templates-<slicer>
 RUN mkdir -p /home/spoolman/.config/spoolman2slicer && \
     cp -r ./spoolman2slicer/data/* /home/spoolman/.config/spoolman2slicer/ && \
     chown -R spoolman:spoolman /home/spoolman
@@ -24,10 +23,15 @@ RUN mkdir -p /configs && chown spoolman:spoolman /configs
 # 5. Switch to the non-root user
 USER spoolman
 
+# Python and S2S native environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV DIR=/configs
 ENV SLICER=prusaslicer
-ENV SPOOLMAN_URL=https://spoolman.local:7912/
+ENV URL=http://spoolman.local:7912
+ENV UPDATES=true
+ENV DELETE_ALL=false
+ENV VERBOSE=false
 
 # 6. Launch the service
-ENTRYPOINT [ "sh", "-c", "spoolman2slicer -U -d /configs -s ${SLICER} -u ${SPOOLMAN_URL}" ]
+ENTRYPOINT [ "spoolman2slicer" ]

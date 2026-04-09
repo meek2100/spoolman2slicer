@@ -15,7 +15,6 @@
 # ]
 # ///
 
-
 """
 Program to load filaments from Spoolman and create slicer filament configuration.
 """
@@ -55,74 +54,97 @@ PRUSASLICER = "prusaslicer"
 SLICER = "slic3r"
 SUPERSLICER = "superslicer"
 
+def get_env_bool(name, default=False):
+    """Helper to parse boolean environment variables."""
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    return val.lower() in ("true", "1", "yes", "on")
+
 parser = argparse.ArgumentParser(
     description="Fetches data from Spoolman and creates slicer filament config files.",
 )
 
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
+
+# Directory is no longer 'required' in argparse to allow environment variable DIR to suffice
 parser.add_argument(
     "-d",
     "--dir",
     metavar="DIR",
-    required=True,
-    help="the slicer's filament config dir",
+    default=os.environ.get("DIR"),
+    help="the slicer's filament config dir (Env: DIR)",
 )
 
 parser.add_argument(
     "-s",
     "--slicer",
-    default=SUPERSLICER,
+    default=os.environ.get("SLICER", SUPERSLICER),
     choices=[ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER],
-    help="the slicer",
+    help="the slicer (Env: SLICER)",
 )
 
+# Backwards compatibility: checks URL first, then SPOOLMAN_URL
 parser.add_argument(
     "-u",
     "--url",
     metavar="URL",
-    default="http://localhost:7912",
-    help="URL for the Spoolman installation",
+    default=os.environ.get("URL", os.environ.get("SPOOLMAN_URL", "http://localhost:7912")),
+    help="URL for the Spoolman installation (Env: URL or SPOOLMAN_URL)",
 )
 
 parser.add_argument(
     "-U",
     "--updates",
     action="store_true",
-    help="keep running and update filament configs if they're updated in Spoolman",
+    default=get_env_bool("UPDATES", False),
+    help=(
+        "keep running and update filament configs if they're updated in Spoolman "
+        "(Env: UPDATES=true)"
+    ),
 )
 
 parser.add_argument(
     "-v",
     "--verbose",
     action="store_true",
-    help="verbose output",
+    default=get_env_bool("VERBOSE", False),
+    help="verbose output (Env: VERBOSE=true)",
 )
 
 parser.add_argument(
     "-V",
     "--variants",
     metavar="VALUE1,VALUE2..",
-    default="",
-    help="write one template per value, separated by comma",
+    default=os.environ.get("VARIANTS", ""),
+    help="write one template per value, separated by comma (Env: VARIANTS)",
 )
 
 parser.add_argument(
     "-D",
     "--delete-all",
     action="store_true",
-    help="delete all filament configs before adding existing ones",
+    default=get_env_bool("DELETE_ALL", False),
+    help="delete all filament configs before adding existing ones (Env: DELETE_ALL=true)",
 )
 
 parser.add_argument(
     "--create-per-spool",
     choices=["all", "least-left", "most-recent"],
-    help="create one output file per spool instead of per filament. "
-    "'all': one file per spool. "
-    "'least-left': one file per filament for the spool having the least filament left. "
-    "'most-recent': one file per filament for the spool being most recently used.",
+    default=os.environ.get("CREATE_PER_SPOOL"),
+    help=(
+        "create one output file per spool instead of per filament (Env: CREATE_PER_SPOOL). "
+        "'all': one file per spool. "
+        "'least-left': one file per filament for the spool having the least filament left. "
+        "'most-recent': one file per filament for the spool being most recently used."
+    ),
 )
 
 args = parser.parse_args()
+
+# Manual validation to ensure a directory is provided via either CLI or Env
+if not args.dir:
+    parser.error("the following arguments are required: -d/--dir (or set DIR environment variable)")
 
 config_dir = user_config_dir(appname="spoolman2slicer", appauthor=False, roaming=True)
 template_path = os.path.join(config_dir, f"templates-{args.slicer}")

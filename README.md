@@ -170,18 +170,27 @@ path-to-venv/bin/spoolman2slicer
 
 ### Using Docker/Docker-Compose
 
-spoolman2slicer can be run from docker.
+The recommended way to run `spoolman2slicer` in Docker is via environment variables in `docker-compose.yml`. This removes the need to override the `entrypoint` command.
 
-Included is a Dockerfile and docker-compose config. Before using it,
-update the environment variables and mount points in docker-compose and
-run:
+```yaml
+services:
+  spoolman2slicer:
+    image: ghcr.io/bofh69/spoolman2slicer:latest
+    container_name: spoolman2slicer
+    restart: unless-stopped
+    environment:
+      - DIR=/configs
+      - URL=[http://spoolman.local:7912](http://spoolman.local:7912)
+      - SLICER=prusaslicer
+      - UPDATES=true
+      - DELETE_ALL=false
+    volumes:
+      - ./configs:/configs
+```
+
+Before using it, update the values in the `environment` section to match your setup and run:
 ```sh
-  docker-compose up -d
-```
-
-for other arguments to the command, use:
-```
-  entrypoint: [ "sh", "-c", "python3 ./spoolman2slicer/spoolman2slicer.py #AddYourArgumentsHere" ]
+docker-compose up -d
 ```
 
 
