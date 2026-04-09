@@ -755,6 +755,8 @@ class TestCreatePerSpool:
                 sample_filament_data["sm2s"]["spoolman_url"] == "http://test.local:7912"
             )
             assert sample_filament_data["sm2s"]["now_int"] == 1234567890
+            # Ensure the spool data is actually attached
+            assert sample_filament_data["spool"] == spool_data
 
     def test_add_sm2s_without_spool_data(self, sample_filament_data):
         """Test that add_sm2s_to_filament adds empty spool dict when no spool provided"""
