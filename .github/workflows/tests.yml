@@ -7,10 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # Required for Codecov OIDC
+      id-token: write  # Required for potential OIDC fallback
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        # 3.14 removed until generally available in runner images
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
     - uses: actions/checkout@v6
     - name: Set up Python ${{ matrix.python-version }}
@@ -30,10 +31,10 @@ jobs:
       run: |
         pytest tests/ -v --cov=. --cov-report=term --cov-report=xml
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@v4
       if: matrix.python-version == '3.12'
       with:
         files: ./coverage.xml
-        use_oidc: true
-        slug: ${{ github.repository }}  # Explicitly provide the slug to fix the upload URL
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: ${{ github.repository }}
         fail_ci_if_error: true
