@@ -67,13 +67,13 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
 
-# Directory is no longer 'required' in argparse to allow environment variable DIR to suffice
+# Directory defaults to DIR env var but is no longer 'required' in argparse
 parser.add_argument(
     "-d",
     "--dir",
     metavar="DIR",
     default=os.environ.get("DIR"),
-    help="the slicer's filament config dir (Env: DIR)",
+    help="the slicer's filament config dir",
 )
 
 parser.add_argument(
@@ -81,7 +81,7 @@ parser.add_argument(
     "--slicer",
     default=os.environ.get("SLICER", SUPERSLICER),
     choices=[ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER],
-    help="the slicer (Env: SLICER)",
+    help="the slicer",
 )
 
 # Backwards compatibility: checks URL first, then SPOOLMAN_URL
@@ -90,7 +90,7 @@ parser.add_argument(
     "--url",
     metavar="URL",
     default=os.environ.get("URL", os.environ.get("SPOOLMAN_URL", "http://localhost:7912")),
-    help="URL for the Spoolman installation (Env: URL or SPOOLMAN_URL)",
+    help="URL for the Spoolman installation",
 )
 
 parser.add_argument(
@@ -98,10 +98,7 @@ parser.add_argument(
     "--updates",
     action="store_true",
     default=get_env_bool("UPDATES", False),
-    help=(
-        "keep running and update filament configs if they're updated in Spoolman "
-        "(Env: UPDATES=true)"
-    ),
+    help="keep running and update filament configs if they're updated in Spoolman",
 )
 
 parser.add_argument(
@@ -109,7 +106,7 @@ parser.add_argument(
     "--verbose",
     action="store_true",
     default=get_env_bool("VERBOSE", False),
-    help="verbose output (Env: VERBOSE=true)",
+    help="verbose output",
 )
 
 parser.add_argument(
@@ -117,7 +114,7 @@ parser.add_argument(
     "--variants",
     metavar="VALUE1,VALUE2..",
     default=os.environ.get("VARIANTS", ""),
-    help="write one template per value, separated by comma (Env: VARIANTS)",
+    help="write one template per value, separated by comma",
 )
 
 parser.add_argument(
@@ -125,7 +122,7 @@ parser.add_argument(
     "--delete-all",
     action="store_true",
     default=get_env_bool("DELETE_ALL", False),
-    help="delete all filament configs before adding existing ones (Env: DELETE_ALL=true)",
+    help="delete all filament configs before adding existing ones",
 )
 
 parser.add_argument(
@@ -133,7 +130,7 @@ parser.add_argument(
     choices=["all", "least-left", "most-recent"],
     default=os.environ.get("CREATE_PER_SPOOL"),
     help=(
-        "create one output file per spool instead of per filament (Env: CREATE_PER_SPOOL). "
+        "create one output file per spool instead of per filament. "
         "'all': one file per spool. "
         "'least-left': one file per filament for the spool having the least filament left. "
         "'most-recent': one file per filament for the spool being most recently used."
