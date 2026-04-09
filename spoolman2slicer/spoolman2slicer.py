@@ -84,12 +84,13 @@ parser.add_argument(
     help="the slicer (Env: SLICER)",
 )
 
+# Backwards compatibility: checks URL first, then SPOOLMAN_URL
 parser.add_argument(
     "-u",
     "--url",
     metavar="URL",
-    default=os.environ.get("URL", "http://localhost:7912"),
-    help="URL for the Spoolman installation (Env: URL)",
+    default=os.environ.get("URL", os.environ.get("SPOOLMAN_URL", "http://localhost:7912")),
+    help="URL for the Spoolman installation (Env: URL or SPOOLMAN_URL)",
 )
 
 parser.add_argument(
