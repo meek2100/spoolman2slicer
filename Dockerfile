@@ -30,7 +30,7 @@ USER spoolman
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV SLICER=prusaslicer
-ENV SPOOLMAN_URL=http://localhost:7912
+ENV SPOOLMAN_URL=https://spoolman.local:7912/
 
 # Launch the service with the internal configs directory
 ENTRYPOINT [ "sh", "-c", "spoolman2slicer -U -d /configs -s ${SLICER} -u ${SPOOLMAN_URL}" ]
