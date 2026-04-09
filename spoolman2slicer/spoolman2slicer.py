@@ -82,6 +82,7 @@ def get_arg_default(name, default_val):
         return get_env_bool(name, default_val)
     except ValueError as err:
         parser.error(str(err))
+        return None  # Satisfies pylint R1710; parser.error calls sys.exit
 
 
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
