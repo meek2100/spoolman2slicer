@@ -3,8 +3,13 @@
 
 FROM python:3.10-slim
 
-# 1. Create a non-root user with UID 1000 to match your host user
-RUN useradd -m -u 1000 spoolman
+# Make UID and GID configurable
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+# 1. Create a non-root user and group
+RUN groupadd -g ${USER_GID} spoolman && \
+    useradd -m -u ${USER_UID} -g spoolman spoolman
 
 WORKDIR /app
 
