@@ -13,12 +13,9 @@ RUN groupadd -g ${USER_GID} sm2s && \
 
 WORKDIR /app
 
-# 2. Copy the packaging files and install the package
-COPY pyproject.toml README.md ./
-RUN pip install --no-cache-dir .
-
-# 3. Copy the rest of the source code
+# 2. Copy the source code and install the package
 COPY . .
+RUN pip install --no-cache-dir .
 
 # 3. Pre-seed the configuration directory with templates
 RUN mkdir -p /home/sm2s/.config/spoolman2slicer && \
