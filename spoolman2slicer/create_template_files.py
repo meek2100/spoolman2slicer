@@ -102,6 +102,7 @@ def parse_args():
     )
 
     args = parser.parse_args()
+    args.slicer = Slicers(args.slicer)
 
     if args.delete_all:
         print("--delete-all is not yet implemented", file=sys.stderr)

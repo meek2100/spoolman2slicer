@@ -144,6 +144,7 @@ parser.add_argument(
 
 
 args = parser.parse_args()
+args.slicer = Slicers(args.slicer)
 
 # Explicit validation for mandatory directory (must be provided via CLI or SM2S_SLICER_CONFIG_DIR)
 if not args.dir:

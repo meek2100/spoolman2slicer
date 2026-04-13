@@ -22,6 +22,10 @@ class Slicers(str, Enum):
     SLIC3R = "slic3r"
     SUPERSLICER = "superslicer"
 
+    def __str__(self):
+        """Ensure f-strings use the underlying value."""
+        return str(self.value)
+
     @property
     def is_json(self):
         """Returns True if the slicer uses JSON-based configuration."""

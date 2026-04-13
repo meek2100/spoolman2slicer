@@ -1,7 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Sebastian Andersson <sebastian@bittr.nu>
-#
 # SPDX-License-Identifier: GPL-3.0-or-later
-version: '3.8'
 
 services:
   spoolman2slicer:
