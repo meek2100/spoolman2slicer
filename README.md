@@ -153,14 +153,14 @@ The recommended way to run `spoolman2slicer` in Docker is via environment variab
 
 | Variable | CLI Equivalent | Description |
 | :--- | :--- | :--- |
-| `DIR` | `-d / --dir` | The slicer's filament config directory. |
-| `SLICER` | `-s / --slicer` | The target slicer. |
-| `URL` | `-u / --url` | URL for the Spoolman installation. |
-| `UPDATES` | `-U / --updates` | Set to `true` to keep running and monitor for updates. |
-| `VERBOSE` | `-v / --verbose` | Set to `true` for verbose output. |
-| `VARIANTS` | `-V / --variants` | Comma-separated list of variants. |
-| `DELETE_ALL` | `-D / --delete-all` | Set to `true` to delete managed configs before starting. |
-| `CREATE_PER_SPOOL` | `--create-per-spool` | Mode for creating files per spool (`all`, `least-left`, or `most-recent`). |
+| `SM2S_SLICER_CONFIG_DIR` | `-d / --dir` | The folder where your slicer stores its configurations. |
+| `SM2S_SLICER` | `-s / --slicer` | The name of your slicer (Fallback: `SLICER`). |
+| `SM2S_SPOOLMAN_URL` | `-u / --url` | The web address of your Spoolman server (Fallback: `SPOOLMAN_URL`). |
+| `SM2S_LIVE_SYNC` | `-U / --updates` | Set to `true` to sync changes in real-time. |
+| `SM2S_VERBOSE_LOGGING` | `-v / --verbose` | Set to `true` for detailed troubleshooting info. |
+| `SM2S_VARIANTS` | `-V / --variants` | Different versions for different printers. |
+| `SM2S_STARTUP_TIDY` | `-D / --delete-all` | Set to `true` to clean old files on startup. |
+| `SM2S_CREATE_PER_SPOOL` | `--create-per-spool` | Create separate files for each spool. |
 
 ```yaml
 services:
@@ -169,11 +169,11 @@ services:
     container_name: spoolman2slicer
     restart: unless-stopped
     environment:
-      - DIR=/configs
-      - URL=http://spoolman.local:7912
-      - SLICER=prusaslicer
-      - UPDATES=true
-      - DELETE_ALL=false
+      - SM2S_SLICER_CONFIG_DIR=/configs
+      - SM2S_SPOOLMAN_URL=http://spoolman.local:7912
+      - SM2S_SLICER=prusaslicer
+      - SM2S_LIVE_SYNC=true
+      - SM2S_STARTUP_TIDY=false
     volumes:
       - ./configs:/configs
 ```
@@ -220,11 +220,11 @@ services:
     container_name: spoolman2slicer
     restart: unless-stopped
     environment:
-      - DIR=/configs
-      - URL=[http://spoolman.local:7912](http://spoolman.local:7912)
-      - SLICER=prusaslicer
-      - UPDATES=true
-      - DELETE_ALL=false
+      - SM2S_SLICER_CONFIG_DIR=/configs
+      - SM2S_SPOOLMAN_URL=http://spoolman.local:7912
+      - SM2S_SLICER=prusaslicer
+      - SM2S_LIVE_SYNC=true
+      - SM2S_STARTUP_TIDY=false
     volumes:
       - ./configs:/configs
 ```
