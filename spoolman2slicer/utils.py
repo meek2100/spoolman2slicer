@@ -33,7 +33,7 @@ def get_env_bool(name, legacy_name=None, default=False):
     if val is None and legacy_name:
         val = os.environ.get(legacy_name)
 
-    if val is None:
+    if not val:
         return default
     val_lower = val.lower()
     if val_lower in ("true", "1", "yes", "on"):
@@ -65,7 +65,7 @@ def get_env_choice(parser, name, choices, legacy_name=None, default=None):
     if val is None and legacy_name:
         val = os.environ.get(legacy_name)
 
-    if val is None:
+    if not val:
         return default
 
     val_lower = val.lower()

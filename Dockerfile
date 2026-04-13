@@ -37,8 +37,6 @@ ENV SM2S_SPOOLMAN_URL=http://spoolman.local:7912
 ENV SM2S_LIVE_SYNC=true
 ENV SM2S_STARTUP_TIDY=false
 ENV SM2S_VERBOSE_LOGGING=false
-ENV SM2S_VARIANTS=""
-ENV SM2S_CREATE_PER_SPOOL=""
 
 # 6. Launch the service
 ENTRYPOINT [ "spoolman2slicer" ]
