@@ -28,15 +28,17 @@ RUN mkdir -p /configs && chown spoolman:spoolman /configs
 # 5. Switch to the non-root user
 USER spoolman
 
-# Python and S2S native environment variables
+# Python and SM2S environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-ENV DIR=/configs
-ENV SLICER=prusaslicer
-ENV URL=http://spoolman.local:7912
-ENV UPDATES=true
-ENV DELETE_ALL=false
-ENV VERBOSE=false
+ENV SM2S_SLICER_CONFIG_DIR=/configs
+ENV SM2S_SLICER=prusaslicer
+ENV SM2S_SPOOLMAN_URL=http://spoolman.local:7912
+ENV SM2S_LIVE_SYNC=true
+ENV SM2S_STARTUP_TIDY=false
+ENV SM2S_VERBOSE_LOGGING=false
+ENV SM2S_VARIANTS=""
+ENV SM2S_CREATE_PER_SPOOL=""
 
 # 6. Launch the service
 ENTRYPOINT [ "spoolman2slicer" ]
