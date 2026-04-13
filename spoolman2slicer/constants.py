@@ -8,11 +8,11 @@
 Shared constants for spoolman2slicer.
 """
 
+from enum import Enum
+
 VERSION = "0.1.1-rc1"
 APP_NAME = "spoolman2slicer"
 APP_AUTHOR = False  # Consistent across POSIX/Windows
-
-from enum import Enum
 
 class Slicers(str, Enum):
     """Namespace for supported slicers and their intrinsic properties."""

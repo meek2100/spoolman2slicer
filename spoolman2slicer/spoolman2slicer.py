@@ -148,7 +148,8 @@ args = parser.parse_args()
 # Explicit validation for mandatory directory (must be provided via CLI or SM2S_SLICER_CONFIG_DIR)
 if not args.dir:
     parser.error(
-        "the following arguments are required: -d/--dir (or set SM2S_SLICER_CONFIG_DIR environment variable)"
+        "the following arguments are required: -d/--dir "
+        "(or set SM2S_SLICER_CONFIG_DIR environment variable)"
     )
 
 config_dir = get_user_config_dir()

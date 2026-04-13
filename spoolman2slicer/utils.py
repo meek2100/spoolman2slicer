@@ -9,9 +9,8 @@ Common utility functions for spoolman2slicer.
 """
 
 import os
-import sys
-import appdirs
 import tempfile
+import appdirs
 from .constants import APP_NAME, APP_AUTHOR, Slicers
 
 
@@ -41,13 +40,13 @@ def get_env_bool(name, legacy_name=None, default=False):
         return True
     if val_lower in ("false", "0", "no", "off"):
         return False
-    
+
     # Construct descriptive error message
     err_msg = f"Invalid boolean environment variable {name}"
     if legacy_name:
         err_msg += f" or {legacy_name}"
     err_msg += f": {val!r}. Use: true/false, 1/0, yes/no, or on/off."
-    
+
     raise ValueError(err_msg)
 
 
