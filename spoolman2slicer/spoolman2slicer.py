@@ -30,90 +30,37 @@ import sys
 import time
 import traceback
 
-from appdirs import user_config_dir
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from pathvalidate import sanitize_filename
 import requests
 from websockets.client import connect
 
-from .file_utils import atomic_write
-
-VERSION = "0.10.1rc1"
-
-DEFAULT_TEMPLATE_PREFIX = "default."
-DEFAULT_TEMPLATE_SUFFIX = ".template"
-FILENAME_TEMPLATE = "filename.template"
-FILENAME_FOR_SPOOL_TEMPLATE = "filename_for_spool.template"
-
-REQUEST_TIMEOUT_SECONDS = 10
-
-# pylint: disable=duplicate-code
-ORCASLICER = "orcaslicer"
-CREALITYPRINT = "crealityprint"
-PRUSASLICER = "prusaslicer"
-SLICER = "slic3r"
-SUPERSLICER = "superslicer"
-
-VALID_SLICERS = [ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER]
-VALID_SPOOL_MODES = ["all", "least-left", "most-recent"]
+from .constants import (
+    VERSION,
+    VALID_SPOOL_MODES,
+    DEFAULT_TEMPLATE_PREFIX,
+    DEFAULT_TEMPLATE_SUFFIX,
+    FILENAME_TEMPLATE,
+    FILENAME_FOR_SPOOL_TEMPLATE,
+    REQUEST_TIMEOUT_SECONDS,
+    Slicers,
+)
+from .utils import (
+    get_user_config_dir,
+    is_json_slicer,
+    get_arg_default,
+    get_env_choice,
+    atomic_write,
+)
 
 
-def get_env_bool(name, legacy_name=None, default=False):
-    """Helper to parse boolean environment variables with explicit validation."""
-    val = os.environ.get(name)
-    if val is None and legacy_name:
-        val = os.environ.get(legacy_name)
 
-    if val is None:
-        return default
-    val_lower = val.lower()
-    if val_lower in ("true", "1", "yes", "on"):
-        return True
-    if val_lower in ("false", "0", "no", "off"):
-        return False
-    raise ValueError(
-        f"Invalid boolean environment variable {name}{' or ' + legacy_name if legacy_name else ''}: {val!r}. "
-        "Use: true/false, 1/0, yes/no, or on/off."
-    )
 
 
 parser = argparse.ArgumentParser(
     prog="spoolman2slicer",
     description="Fetches data from Spoolman and creates slicer filament config files.",
 )
-
-
-def get_arg_default(name, legacy_name=None, default_val=False):
-    """Safely fetch boolean defaults from environment for argparse."""
-    try:
-        return get_env_bool(name, legacy_name=legacy_name, default=default_val)
-    except ValueError as err:
-        parser.error(str(err))
-        return None  # Satisfies pylint R1710; parser.error calls sys.exit
-
-
-def get_env_choice(name, choices, legacy_name=None, default=None):
-    """Fetch value from env and validate against choices during parser initialization."""
-    val = os.environ.get(name)
-    if val is None and legacy_name:
-        val = os.environ.get(legacy_name)
-
-    if val is None:
-        return default
-
-    val_lower = val.lower()
-    if val_lower in choices:
-        return val_lower
-
-    env_name_str = f"environment variable {name}"
-    if legacy_name:
-        env_name_str += f" (or legacy {legacy_name})"
-
-    parser.error(
-        f"Invalid {env_name_str}: {val!r}. Choose from: {choices}"
-    )
-    return None
-
 
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
 
@@ -130,9 +77,9 @@ parser.add_argument(
     "--slicer",
     type=str.lower,
     default=get_env_choice(
-        "SM2S_SLICER", VALID_SLICERS, legacy_name="SLICER", default=SUPERSLICER
+        parser, "SM2S_SLICER", Slicers.choices(), legacy_name="SLICER", default=Slicers.SUPERSLICER
     ),
-    choices=VALID_SLICERS,
+    choices=Slicers.choices(),
     help="The name of your slicer (e.g., OrcaSlicer, PrusaSlicer).",
 )
 
@@ -152,7 +99,7 @@ parser.add_argument(
     "-U",
     "--updates",
     action="store_true",
-    default=get_arg_default("SM2S_LIVE_SYNC", default_val=False),
+    default=get_arg_default(parser, "SM2S_LIVE_SYNC", default_val=False),
     help="Keep the tool running to automatically sync changes from Spoolman in real-time.",
 )
 
@@ -160,7 +107,7 @@ parser.add_argument(
     "-v",
     "--verbose",
     action="store_true",
-    default=get_arg_default("SM2S_VERBOSE_LOGGING", default_val=False),
+    default=get_arg_default(parser, "SM2S_VERBOSE_LOGGING", default_val=False),
     help="Show detailed progress and error information for troubleshooting.",
 )
 
@@ -176,7 +123,7 @@ parser.add_argument(
     "-D",
     "--delete-all",
     action="store_true",
-    default=get_arg_default("SM2S_STARTUP_TIDY", default_val=False),
+    default=get_arg_default(parser, "SM2S_STARTUP_TIDY", default_val=False),
     help="Clear out previously generated filament files before starting (keeps your folders tidy).",
 )
 
@@ -184,7 +131,7 @@ parser.add_argument(
     "--create-per-spool",
     type=str.lower,
     choices=VALID_SPOOL_MODES,
-    default=get_env_choice("SM2S_CREATE_PER_SPOOL", VALID_SPOOL_MODES),
+    default=get_env_choice(parser, "SM2S_CREATE_PER_SPOOL", VALID_SPOOL_MODES),
     help=(
         "create one output file per spool instead of per filament. "
         "'all': one file per spool. "
@@ -195,6 +142,7 @@ parser.add_argument(
     ),
 )
 
+
 args = parser.parse_args()
 
 # Explicit validation for mandatory directory (must be provided via CLI or SM2S_SLICER_CONFIG_DIR)
@@ -203,7 +151,7 @@ if not args.dir:
         "the following arguments are required: -d/--dir (or set SM2S_SLICER_CONFIG_DIR environment variable)"
     )
 
-config_dir = user_config_dir(appname="spoolman2slicer", appauthor=False, roaming=True)
+config_dir = get_user_config_dir()
 template_path = os.path.join(config_dir, f"templates-{args.slicer}")
 
 if args.verbose:
@@ -273,9 +221,9 @@ def add_sm2s_to_filament(filament, suffix, variant, spool=None):
 
 def get_config_suffix():
     """Returns the slicer's config file prefix"""
-    if args.slicer in (SLICER, SUPERSLICER, PRUSASLICER):
+    if args.slicer in (Slicers.SLIC3R, Slicers.SUPERSLICER, Slicers.PRUSA):
         return ["ini"]
-    if args.slicer in (ORCASLICER, CREALITYPRINT):
+    if is_json_slicer(args.slicer):
         return ["json", "info"]
 
     raise ValueError("That slicer is not yet supported")
@@ -624,7 +572,7 @@ def process_filaments_default(spools):
     for filament_id in filament_ids_with_spools:
         if filament_id in filaments_cache:
             filament = filaments_cache[filament_id].copy()
-            if args.slicer == CREALITYPRINT:
+            if args.slicer == Slicers.CREALITY:
                 filament["spool_id"] = filament_id
                 filament["material_code"] = material_code_year_prefix + str(
                     filament_id
@@ -642,7 +590,7 @@ def process_filaments_per_spool_all(spools):
         if spool.get("archived", False):
             continue
         filament = spool["filament"].copy()  # Make a copy to avoid mutation
-        if args.slicer == CREALITYPRINT:
+        if args.slicer == Slicers.CREALITY:
             filament["spool_id"] = spool["id"]
             filament["material_code"] = material_code_year_prefix + str(
                 spool["id"]
