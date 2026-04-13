@@ -43,6 +43,10 @@ dependencies = [
     "urllib3>=2.6.0",
 ]
 [project.optional-dependencies]
+plugins = [
+    "spool2klipper",
+    "nfc2klipper"
+]
 dev = [
     "black>=25.9.0",
     "build>=1.4.0",

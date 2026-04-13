@@ -19,85 +19,20 @@ import pytest
 @pytest.fixture
 def sample_spoolman_response():
     """Sample Spoolman API response with filament data"""
-    return [
-        {
-            "id": 1,
-            "filament": {
-                "id": 10,
-                "registered": "2024-10-08T12:23:04Z",
-                "name": "Test PLA Black",
-                "vendor": {
-                    "id": 5,
-                    "registered": "2024-10-08T12:20:15Z",
-                    "name": "TestVendor",
-                    "extra": {},
-                },
-                "material": "PLA",
-                "price": 25.0,
-                "density": 1.24,
-                "diameter": 1.75,
-                "weight": 1000.0,
-                "spool_weight": 200.0,
-                "article_number": "PLA-BLK-001",
-                "settings_extruder_temp": 210,
-                "settings_bed_temp": 60,
-                "color_hex": "000000",
-                "extra": {"pressure_advance": "0.045"},
-            },
-        },
-        {
-            "id": 2,
-            "filament": {
-                "id": 11,
-                "registered": "2024-10-09T10:15:30Z",
-                "name": "Test ABS Red",
-                "vendor": {
-                    "id": 6,
-                    "registered": "2024-10-09T10:10:00Z",
-                    "name": "AnotherVendor",
-                    "extra": {},
-                },
-                "material": "ABS",
-                "price": 30.0,
-                "density": 1.04,
-                "diameter": 1.75,
-                "weight": 1000.0,
-                "spool_weight": 250.0,
-                "article_number": "ABS-RED-002",
-                "settings_extruder_temp": 240,
-                "settings_bed_temp": 100,
-                "color_hex": "FF0000",
-                "extra": {},
-            },
-        },
-    ]
+    mock_path = Path(__file__).parent / "mocks" / "filaments.json"
+    with open(mock_path, "r") as f:
+        # Wrap the filament data in the expected list-of-dicts format
+        # where each dict has a "filament" key
+        filaments = json.load(f)
+        return [{"id": i+1, "filament": f} for i, f in enumerate(filaments)]
 
 
 @pytest.fixture
 def sample_filament_data():
     """Sample single filament data"""
-    return {
-        "id": 10,
-        "registered": "2024-10-08T12:23:04Z",
-        "name": "Test PLA Black",
-        "vendor": {
-            "id": 5,
-            "registered": "2024-10-08T12:20:15Z",
-            "name": "TestVendor",
-            "extra": {},
-        },
-        "material": "PLA",
-        "price": 25.0,
-        "density": 1.24,
-        "diameter": 1.75,
-        "weight": 1000.0,
-        "spool_weight": 200.0,
-        "article_number": "PLA-BLK-001",
-        "settings_extruder_temp": 210,
-        "settings_bed_temp": 60,
-        "color_hex": "000000",
-        "extra": {"pressure_advance": "0.045"},
-    }
+    mock_path = Path(__file__).parent / "mocks" / "filaments.json"
+    with open(mock_path, "r") as f:
+        return json.load(f)[0]
 
 
 @pytest.fixture

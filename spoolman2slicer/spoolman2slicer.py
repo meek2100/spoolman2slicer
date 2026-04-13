@@ -37,6 +37,7 @@ import requests
 from websockets.client import connect
 
 from .file_utils import atomic_write
+from .plugins import PluginManager
 
 VERSION = "0.10.1rc1"
 
@@ -72,6 +73,7 @@ def get_env_bool(name, default=False):
 
 
 parser = argparse.ArgumentParser(
+    prog="spoolman2slicer",
     description="Fetches data from Spoolman and creates slicer filament config files.",
 )
 
@@ -162,6 +164,20 @@ parser.add_argument(
         "'most-recent': one file per filament for the spool being most "
         "recently used."
     ),
+)
+
+parser.add_argument(
+    "--with-s2k",
+    action="store_true",
+    default=get_arg_default("S2S_WITH_S2K", False),
+    help="enable Spool2Klipper plugin (manages macro updates when spool IDs change)",
+)
+
+parser.add_argument(
+    "--with-n2k",
+    action="store_true",
+    default=get_arg_default("S2S_WITH_N2K", False),
+    help="enable NFC2Klipper plugin (manages NFC tag reading/writing)",
 )
 
 args = parser.parse_args()
@@ -1021,6 +1037,13 @@ async def connect_updates():
 
 def main():
     """Main function to run the spoolman2slicer tool"""
+    # 1. Initialize Plugin Manager
+    plugin_mgr = PluginManager(args.url, verbose=args.verbose)
+    if args.with_s2k:
+        plugin_mgr.load_plugin("s2k")
+    if args.with_n2k:
+        plugin_mgr.load_plugin("n2k")
+
     if args.delete_all:
         delete_all_filaments()
 
@@ -1085,9 +1108,12 @@ def main():
     if args.updates:
         print("Waiting for updates...")
         try:
+            # Start plugins before running the websocket loop
+            plugin_mgr.start_plugins()
             asyncio.run(connect_updates())
         except KeyboardInterrupt:
             print("\nShutting down gracefully...")
+            plugin_mgr.stop_plugins()
             sys.exit(0)
         # pylint: disable=broad-exception-caught  # Need to catch all websocket errors
         except Exception as ex:

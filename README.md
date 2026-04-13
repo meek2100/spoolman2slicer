@@ -145,6 +145,8 @@ options:
                         'all': one file per spool.
                         'least-left': one file per filament for the spool having the least filament left.
                         'most-recent': one file per filament for the spool being most recently used.
+  --with-s2k            enable Spool2Klipper plugin (manages macro updates)
+  --with-n2k            enable NFC2Klipper plugin (manages NFC tag I/O)
 ```
 
 ### Docker / Docker-compose (Environment Variables)
@@ -161,6 +163,8 @@ The recommended way to run `spoolman2slicer` in Docker is via environment variab
 | `VARIANTS` | `-V / --variants` | Comma-separated list of variants. |
 | `DELETE_ALL` | `-D / --delete-all` | Set to `true` to delete managed configs before starting. |
 | `CREATE_PER_SPOOL` | `--create-per-spool` | Mode for creating files per spool (`all`, `least-left`, or `most-recent`). |
+| `S2S_WITH_S2K` | `--with-s2k` | Set to `true` to enable the Spool2Klipper plugin. |
+| `S2S_WITH_N2K` | `--with-n2k` | Set to `true` to enable the NFC2Klipper plugin. |
 
 ```yaml
 services:
@@ -233,6 +237,22 @@ Before using it, update the values in the `environment` section to match your se
 ```sh
 docker-compose up -d
 ```
+
+## Extensions / Plugins
+
+*spoolman2slicer* can act as a host for other tools in the ecosystem, running them as background agents within the same process.
+
+### Enabling Plugins
+Use the `--with-s2k` or `--with-n2k` flags (or environment variables) to enable extensions:
+
+*   **Spool2Klipper** (`--with-s2k`): Automatically updates Klipper macros when spool IDs change in Moonraker or Spoolman.
+*   **NFC2Klipper** (`--with-n2k`): Adds NFC tag reading and writing capabilities to the host.
+
+### Auto-Installation
+If a plugin is enabled but not installed in the current Python environment, *spoolman2slicer* will attempt to automatically install it (using `pip install`) before starting. If running from source, it will prioritize local sibling directories.
+
+### Configuration Pass-through
+Plugins automatically inherit the `URL` (Spoolman URL) from the host, though they can still be individually configured using their own environment variables (`S2K_*` and `N2K_*`).
 
 
 ### From Source
