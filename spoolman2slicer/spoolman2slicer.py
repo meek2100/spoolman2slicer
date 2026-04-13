@@ -30,47 +30,29 @@ import sys
 import time
 import traceback
 
-from appdirs import user_config_dir
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from pathvalidate import sanitize_filename
 import requests
 from websockets.client import connect
 
-from .file_utils import atomic_write
+from .constants import (
+    VERSION,
+    VALID_SPOOL_MODES,
+    DEFAULT_TEMPLATE_PREFIX,
+    DEFAULT_TEMPLATE_SUFFIX,
+    FILENAME_TEMPLATE,
+    FILENAME_FOR_SPOOL_TEMPLATE,
+    REQUEST_TIMEOUT_SECONDS,
+    Slicers,
+)
+from .utils import (
+    get_user_config_dir,
+    is_json_slicer,
+    get_arg_default,
+    get_env_choice,
+    atomic_write,
+)
 from .plugins import PluginManager
-
-VERSION = "0.10.1rc1"
-
-DEFAULT_TEMPLATE_PREFIX = "default."
-DEFAULT_TEMPLATE_SUFFIX = ".template"
-FILENAME_TEMPLATE = "filename.template"
-FILENAME_FOR_SPOOL_TEMPLATE = "filename_for_spool.template"
-
-REQUEST_TIMEOUT_SECONDS = 10
-
-# pylint: disable=duplicate-code
-ORCASLICER = "orcaslicer"
-CREALITYPRINT = "crealityprint"
-PRUSASLICER = "prusaslicer"
-SLICER = "slic3r"
-SUPERSLICER = "superslicer"
-
-
-def get_env_bool(name, default=False):
-    """Helper to parse boolean environment variables with explicit validation."""
-    val = os.environ.get(name)
-    if val is None:
-        return default
-    val_lower = val.lower()
-    if val_lower in ("true", "1", "yes", "on"):
-        return True
-    if val_lower in ("false", "0", "no", "off"):
-        return False
-    raise ValueError(
-        f"Invalid boolean environment variable {name}: {val!r}. "
-        "Use: true/false, 1/0, yes/no, or on/off."
-    )
-
 
 parser = argparse.ArgumentParser(
     prog="spoolman2slicer",
@@ -78,14 +60,13 @@ parser = argparse.ArgumentParser(
 )
 
 
-def get_arg_default(name, default_val):
-    """Safely fetch boolean defaults from environment for argparse."""
-    try:
-        return get_env_bool(name, default_val)
-    except ValueError as err:
-        parser.error(str(err))
-        return None  # Satisfies pylint R1710; parser.error calls sys.exit
 
+
+
+parser = argparse.ArgumentParser(
+    prog="spoolman2slicer",
+    description="Fetches data from Spoolman and creates slicer filament config files.",
+)
 
 parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
 
@@ -93,69 +74,70 @@ parser.add_argument(
     "-d",
     "--dir",
     metavar="DIR",
-    default=os.environ.get("DIR"),
-    help="the slicer's filament config dir",
+    default=os.environ.get("SM2S_SLICER_CONFIG_DIR"),
+    help="The folder where your slicer stores its filament configurations.",
 )
 
 parser.add_argument(
     "-s",
     "--slicer",
     type=str.lower,
-    default=os.environ.get("SLICER", SUPERSLICER).lower(),
-    choices=[ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER],
-    help="the slicer",
+    default=get_env_choice(
+        parser, "SM2S_SLICER", Slicers.choices(), legacy_name="SLICER", default=Slicers.SUPERSLICER
+    ),
+    choices=Slicers.choices(),
+    help="The name of your slicer (e.g., OrcaSlicer, PrusaSlicer).",
 )
 
-# Backwards compatibility: checks URL first, then SPOOLMAN_URL
+# Backwards compatibility: checks SM2S_SPOOLMAN_URL first, then legacy SPOOLMAN_URL
 parser.add_argument(
     "-u",
     "--url",
     metavar="URL",
-    default=os.environ.get("URL", os.environ.get("SPOOLMAN_URL", "http://localhost:7912")),
-    help="URL for the Spoolman installation",
+    default=os.environ.get(
+        "SM2S_SPOOLMAN_URL",
+        os.environ.get("SPOOLMAN_URL", "http://localhost:7912"),
+    ),
+    help="The web address of your Spoolman server.",
 )
 
 parser.add_argument(
     "-U",
     "--updates",
     action="store_true",
-    default=get_arg_default("UPDATES", False),
-    help="keep running and update filament configs if they're updated in Spoolman",
+    default=get_arg_default(parser, "SM2S_LIVE_SYNC", default_val=False),
+    help="Keep the tool running to automatically sync changes from Spoolman in real-time.",
 )
 
 parser.add_argument(
     "-v",
     "--verbose",
     action="store_true",
-    default=get_arg_default("VERBOSE", False),
-    help="verbose output",
+    default=get_arg_default(parser, "SM2S_VERBOSE_LOGGING", default_val=False),
+    help="Show detailed progress and error information for troubleshooting.",
 )
 
 parser.add_argument(
     "-V",
     "--variants",
     metavar="VALUE1,VALUE2..",
-    default=os.environ.get("VARIANTS", ""),
-    help="write one template per value, separated by comma",
+    default=os.environ.get("SM2S_VARIANTS", ""),
+    help="Create different filament versions for different printers (e.g., 'Printer1,Printer2').",
 )
 
 parser.add_argument(
     "-D",
     "--delete-all",
     action="store_true",
-    default=get_arg_default("DELETE_ALL", False),
-    help="delete all filament configs before adding existing ones",
+    default=get_arg_default(parser, "SM2S_STARTUP_TIDY", default_val=False),
+    help="Clear out previously generated filament files before starting (keeps your folders tidy).",
 )
 
 parser.add_argument(
     "--create-per-spool",
     type=str.lower,
-    choices=["all", "least-left", "most-recent"],
-    default=(
-        os.environ.get("CREATE_PER_SPOOL").lower()
-        if os.environ.get("CREATE_PER_SPOOL")
-        else None
-    ),
+    choices=VALID_SPOOL_MODES,
+    default=get_env_choice(parser, "SM2S_CREATE_PER_SPOOL", VALID_SPOOL_MODES),
     help=(
         "create one output file per spool instead of per filament. "
         "'all': one file per spool. "
@@ -169,38 +151,28 @@ parser.add_argument(
 parser.add_argument(
     "--with-s2k",
     action="store_true",
-    default=get_arg_default("S2S_WITH_S2K", False),
+    default=get_arg_default(parser, "SM2S_WITH_S2K", legacy_name="S2S_WITH_S2K"),
     help="enable Spool2Klipper plugin (manages macro updates when spool IDs change)",
 )
 
 parser.add_argument(
     "--with-n2k",
     action="store_true",
-    default=get_arg_default("S2S_WITH_N2K", False),
+    default=get_arg_default(parser, "SM2S_WITH_N2K", legacy_name="S2S_WITH_N2K"),
     help="enable NFC2Klipper plugin (manages NFC tag reading/writing)",
 )
 
 args = parser.parse_args()
+args.slicer = Slicers(args.slicer)
 
-# Explicit validation for settings that may have come from environment variables
+# Explicit validation for mandatory directory (must be provided via CLI or SM2S_SLICER_CONFIG_DIR)
 if not args.dir:
-    parser.error("the following arguments are required: -d/--dir (or set DIR environment variable)")
-
-valid_slicers = [ORCASLICER, CREALITYPRINT, PRUSASLICER, SLICER, SUPERSLICER]
-if args.slicer not in valid_slicers:
     parser.error(
-        f"argument -s/--slicer: invalid choice: {args.slicer!r} "
-        f"(choose from {valid_slicers})"
+        "the following arguments are required: -d/--dir "
+        "(or set SM2S_SLICER_CONFIG_DIR environment variable)"
     )
 
-valid_spool_modes = [None, "all", "least-left", "most-recent"]
-if args.create_per_spool not in valid_spool_modes:
-    parser.error(
-        f"argument --create-per-spool: invalid choice: {args.create_per_spool!r} "
-        "(choose from ['all', 'least-left', 'most-recent'])"
-    )
-
-config_dir = user_config_dir(appname="spoolman2slicer", appauthor=False, roaming=True)
+config_dir = get_user_config_dir()
 template_path = os.path.join(config_dir, f"templates-{args.slicer}")
 
 if args.verbose:
@@ -215,7 +187,7 @@ if not os.path.exists(template_path):
                 "\n"
                 "Install them with:\n"
                 "\n"
-                f'mkdir "{config_dir} /p"\n'
+                f'mkdir "{config_dir}"\n'
                 f'copy "{script_dir}"\\templates-* "{config_dir}\\"\n'
             ),
             file=sys.stderr,
@@ -232,10 +204,6 @@ if not os.path.exists(template_path):
             ),
             file=sys.stderr,
         )
-    sys.exit(1)
-
-if not os.path.exists(template_path):
-    print(f'ERROR: No templates found in "{template_path}".', file=sys.stderr)
     sys.exit(1)
 
 if not os.path.exists(args.dir):
@@ -274,9 +242,9 @@ def add_sm2s_to_filament(filament, suffix, variant, spool=None):
 
 def get_config_suffix():
     """Returns the slicer's config file prefix"""
-    if args.slicer in (SLICER, SUPERSLICER, PRUSASLICER):
+    if args.slicer in (Slicers.SLIC3R, Slicers.SUPERSLICER, Slicers.PRUSA):
         return ["ini"]
-    if args.slicer in (ORCASLICER, CREALITYPRINT):
+    if is_json_slicer(args.slicer):
         return ["json", "info"]
 
     raise ValueError("That slicer is not yet supported")
@@ -540,7 +508,7 @@ def delete_filament(filament, is_update=False):
     if filename != new_filename:
         # Safety check: only delete if the tool's signature is found
         if is_managed_file(filename):
-            print(f"Deleting managed config: {filename}")
+            print(f"Deleting: {filename}")
             os.remove(filename)
         else:
             _log_info(f"Skipping deletion of non-managed file: {filename}")
@@ -553,7 +521,7 @@ def delete_all_filaments():
             if filename.endswith("." + suffix):
                 filepath = args.dir.removesuffix("/") + "/" + filename
                 if is_managed_file(filepath):
-                    print(f"Deleting managed file: {filepath}")
+                    print(f"Deleting: {filepath}")
                     os.remove(filepath)
                 else:
                     _log_debug(f"Skipping non-managed file: {filepath}")
@@ -625,7 +593,7 @@ def process_filaments_default(spools):
     for filament_id in filament_ids_with_spools:
         if filament_id in filaments_cache:
             filament = filaments_cache[filament_id].copy()
-            if args.slicer == CREALITYPRINT:
+            if args.slicer == Slicers.CREALITY:
                 filament["spool_id"] = filament_id
                 filament["material_code"] = material_code_year_prefix + str(
                     filament_id
@@ -643,7 +611,7 @@ def process_filaments_per_spool_all(spools):
         if spool.get("archived", False):
             continue
         filament = spool["filament"].copy()  # Make a copy to avoid mutation
-        if args.slicer == CREALITYPRINT:
+        if args.slicer == Slicers.CREALITY:
             filament["spool_id"] = spool["id"]
             filament["material_code"] = material_code_year_prefix + str(
                 spool["id"]

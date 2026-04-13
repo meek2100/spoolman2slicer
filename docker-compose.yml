@@ -1,7 +1,6 @@
-# SPDX-FileCopyrightText: 2025 Sebastian Andersson <sebastian@bittr.nu>
+# SPDX-FileCopyrightText: 2024-2025 Sebastian Andersson <sebastian@bittr.nu>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-version: '3.8'
 
 services:
   spoolman2slicer:
@@ -13,15 +12,15 @@ services:
     restart: unless-stopped
     environment:
       # Required settings
-      - DIR=/configs
-      - URL=http://spoolman.local:7912  # Supports SPOOLMAN_URL for compatibility
-      - SLICER=prusaslicer
-      
+      - SM2S_SLICER_CONFIG_DIR=/configs
+      - SM2S_SPOOLMAN_URL=http://spoolman.local:7912
+      - SM2S_SLICER=prusaslicer
+
       # Optional operational settings
-      - UPDATES=true            # Continuous monitoring mode (-U)
-      - DELETE_ALL=false        # Clear config dir on start (-D)
-      - VERBOSE=false           # Debug logging (-v)
-      - VARIANTS=               # Comma-separated variant list (-V)
-      - CREATE_PER_SPOOL=       # Options: all, least-left, most-recent (--create-per-spool)
+      - SM2S_LIVE_SYNC=true               # Stay running to sync changes in real-time
+      - SM2S_STARTUP_TIDY=false           # Clean old files when the tool starts
+      - SM2S_VERBOSE_LOGGING=false       # Show detailed info for troubleshooting
+      - SM2S_VARIANTS=                   # List of printer variants (comma-separated)
+      - SM2S_CREATE_PER_SPOOL=           # Options: all, least-left, most-recent
     volumes:
       - ./configs:/configs

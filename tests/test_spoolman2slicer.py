@@ -19,6 +19,7 @@ from unittest.mock import MagicMock, Mock, patch, AsyncMock
 
 import pytest
 import requests
+from spoolman2slicer.constants import Slicers
 
 # Setup fake template directory before import
 # Note: These are module-level to work around module-level execution in spoolman2slicer.py
@@ -65,26 +66,26 @@ class TestConfigSuffix:
 
     def test_superslicer_suffix(self):
         """Test SuperSlicer returns ini suffix"""
-        with patch.object(spoolman2slicer.args, "slicer", spoolman2slicer.SUPERSLICER):
+        with patch.object(spoolman2slicer.args, "slicer", Slicers.SUPERSLICER):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["ini"]
 
     def test_prusaslicer_suffix(self):
         """Test PrusaSlicer returns ini suffix"""
-        with patch.object(spoolman2slicer.args, "slicer", spoolman2slicer.PRUSASLICER):
+        with patch.object(spoolman2slicer.args, "slicer", Slicers.PRUSA):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["ini"]
 
     def test_orcaslicer_suffix(self):
         """Test OrcaSlicer returns json and info suffixes"""
-        with patch.object(spoolman2slicer.args, "slicer", spoolman2slicer.ORCASLICER):
+        with patch.object(spoolman2slicer.args, "slicer", Slicers.ORCA):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["json", "info"]
 
     def test_crealityprint_suffix(self):
         """Test CrealityPrint returns json and info suffixes"""
         with patch.object(
-            spoolman2slicer.args, "slicer", spoolman2slicer.CREALITYPRINT
+            spoolman2slicer.args, "slicer", Slicers.CREALITY
         ):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["json", "info"]
@@ -480,7 +481,7 @@ class TestSlicerTypes:
             patch.object(spoolman2slicer, "templates") as mock_templates,
             patch.object(spoolman2slicer.args, "dir", temp_output_dir),
             patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "slicer", spoolman2slicer.ORCASLICER),
+            patch.object(spoolman2slicer.args, "slicer", Slicers.ORCA),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -515,7 +516,7 @@ class TestSlicerTypes:
             patch.object(spoolman2slicer, "templates") as mock_templates,
             patch.object(spoolman2slicer.args, "dir", temp_output_dir),
             patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "slicer", spoolman2slicer.CREALITYPRINT),
+            patch.object(spoolman2slicer.args, "slicer", Slicers.CREALITY),
         ):
             from jinja2 import Environment, FileSystemLoader
 
