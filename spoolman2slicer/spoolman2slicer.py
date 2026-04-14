@@ -43,6 +43,7 @@ from .constants import (
     FILENAME_TEMPLATE,
     FILENAME_FOR_SPOOL_TEMPLATE,
     REQUEST_TIMEOUT_SECONDS,
+    APP_NAME,
     Slicers,
 )
 from .utils import (
@@ -50,154 +51,195 @@ from .utils import (
     is_json_slicer,
     get_arg_default,
     get_env_choice,
+    get_env_str,
     atomic_write,
 )
 
-
-
-
-
-parser = argparse.ArgumentParser(
-    prog="spoolman2slicer",
-    description="Fetches data from Spoolman and creates slicer filament config files.",
-)
-
-parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
-
-parser.add_argument(
-    "-d",
-    "--dir",
-    metavar="DIR",
-    default=os.environ.get("SM2S_SLICER_CONFIG_DIR"),
-    help="The folder where your slicer stores its filament configurations.",
-)
-
-parser.add_argument(
-    "-s",
-    "--slicer",
-    type=str.lower,
-    default=get_env_choice(
-        parser, "SM2S_SLICER", Slicers.choices(), legacy_name="SLICER", default=Slicers.SUPERSLICER
-    ),
-    choices=Slicers.choices(),
-    help="The name of your slicer (e.g., OrcaSlicer, PrusaSlicer).",
-)
-
-# Backwards compatibility: checks SM2S_SPOOLMAN_URL first, then legacy SPOOLMAN_URL
-parser.add_argument(
-    "-u",
-    "--url",
-    metavar="URL",
-    default=os.environ.get(
-        "SM2S_SPOOLMAN_URL",
-        os.environ.get("SPOOLMAN_URL", "http://localhost:7912"),
-    ),
-    help="The web address of your Spoolman server.",
-)
-
-parser.add_argument(
-    "-U",
-    "--updates",
-    action="store_true",
-    default=get_arg_default(parser, "SM2S_LIVE_SYNC", default_val=False),
-    help="Keep the tool running to automatically sync changes from Spoolman in real-time.",
-)
-
-parser.add_argument(
-    "-v",
-    "--verbose",
-    action="store_true",
-    default=get_arg_default(parser, "SM2S_VERBOSE_LOGGING", default_val=False),
-    help="Show detailed progress and error information for troubleshooting.",
-)
-
-parser.add_argument(
-    "-V",
-    "--variants",
-    metavar="VALUE1,VALUE2..",
-    default=os.environ.get("SM2S_VARIANTS", ""),
-    help="Create different filament versions for different printers (e.g., 'Printer1,Printer2').",
-)
-
-parser.add_argument(
-    "-D",
-    "--delete-all",
-    action="store_true",
-    default=get_arg_default(parser, "SM2S_STARTUP_TIDY", default_val=False),
-    help="Clear out previously generated filament files before starting (keeps your folders tidy).",
-)
-
-parser.add_argument(
-    "--create-per-spool",
-    type=str.lower,
-    choices=VALID_SPOOL_MODES,
-    default=get_env_choice(parser, "SM2S_CREATE_PER_SPOOL", VALID_SPOOL_MODES),
-    help=(
-        "create one output file per spool instead of per filament. "
-        "'all': one file per spool. "
-        "'least-left': one file per filament for the spool having the least "
-        "filament left. "
-        "'most-recent': one file per filament for the spool being most "
-        "recently used."
-    ),
-)
-
-
-args = parser.parse_args()
-args.slicer = Slicers(args.slicer)
-
-# Explicit validation for mandatory directory (must be provided via CLI or SM2S_SLICER_CONFIG_DIR)
-if not args.dir:
-    parser.error(
-        "the following arguments are required: -d/--dir "
-        "(or set SM2S_SLICER_CONFIG_DIR environment variable)"
-    )
-
-config_dir = get_user_config_dir()
-template_path = os.path.join(config_dir, f"templates-{args.slicer}")
-
-if args.verbose:
-    print(f"Reading templates files from: {template_path}")
-
-if not os.path.exists(template_path):
-    script_dir = os.path.dirname(__file__)
-    if platform.system() == "Windows":
-        print(
-            (
-                f'ERROR: No templates found in "{template_path}".\n'
-                "\n"
-                "Install them with:\n"
-                "\n"
-                f'mkdir "{config_dir}"\n'
-                f'copy "{script_dir}"\\templates-* "{config_dir}\\"\n'
-            ),
-            file=sys.stderr,
-        )
-    else:
-        print(
-            (
-                f'ERROR: No templates found in "{template_path}".\n'
-                "\n"
-                "Install them with:\n"
-                "\n"
-                f"mkdir -p '{config_dir}'\n"
-                f"cp -r '{script_dir}'/templates-* '{config_dir}/'\n"
-            ),
-            file=sys.stderr,
-        )
-    sys.exit(1)
-
-if not os.path.exists(args.dir):
-    print(f'ERROR: The output dir "{args.dir}" doesn\'t exist.', file=sys.stderr)
-    sys.exit(1)
-
-loader = FileSystemLoader(template_path)
-templates = Environment(loader=loader)  # nosec B701
-
+# Global variables will be initialized in parse_args/main
+args = None
+templates = None
 filament_id_to_filename = {}
 filament_id_to_content = {}
-
 filename_usage = {}
+
+
+def parse_args():
+    """Configure and parse command line arguments with environment variable support."""
+    # Attempt to load .env file if python-dotenv is installed
+    try:
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        pass
+
+    parser = argparse.ArgumentParser(
+        prog="spoolman2slicer",
+        description="Fetches data from Spoolman and creates slicer filament config files.",
+    )
+
+    parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
+
+    parser.add_argument(
+        "-d",
+        "--dir",
+        metavar="DIR",
+        default=get_env_str("SM2S_SLICER_CONFIG_DIR", legacy_name="DIR"),
+        help="The folder where your slicer stores its filament configurations.",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--slicer",
+        type=str.lower,
+        default=get_env_choice(
+            parser,
+            "SM2S_SLICER",
+            Slicers.choices(),
+            legacy_name="SLICER",
+            default=Slicers.SUPERSLICER,
+        ),
+        choices=Slicers.choices(),
+        help="The name of your slicer (e.g., OrcaSlicer, PrusaSlicer).",
+    )
+
+    # Backwards compatibility: checks SM2S_SPOOLMAN_URL first, then legacy SPOOLMAN_URL/URL
+    parser.add_argument(
+        "-u",
+        "--url",
+        metavar="URL",
+        default=get_env_str(
+            "SM2S_SPOOLMAN_URL",
+            legacy_name="SPOOLMAN_URL",
+            default=get_env_str("URL", default="http://localhost:8000"),
+        ),
+        help="The web address of your Spoolman server.",
+    )
+
+    parser.add_argument(
+        "-U",
+        "--updates",
+        action="store_true",
+        default=get_arg_default(
+            parser, "SM2S_LIVE_SYNC", legacy_name="UPDATES", default_val=False
+        ),
+        help="Keep the tool running to automatically sync changes from Spoolman in real-time.",
+    )
+
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=get_arg_default(
+            parser, "SM2S_VERBOSE_LOGGING", legacy_name="VERBOSE", default_val=False
+        ),
+        help="Show detailed progress and error information for troubleshooting.",
+    )
+
+    parser.add_argument(
+        "-V",
+        "--variants",
+        metavar="VALUE1,VALUE2..",
+        default=get_env_str("SM2S_VARIANTS", legacy_name="VARIANTS", default=""),
+        help="Create different filament versions for different printers (e.g., 'Printer1,Printer2').",
+    )
+
+    parser.add_argument(
+        "-D",
+        "--delete-all",
+        action="store_true",
+        default=get_arg_default(
+            parser, "SM2S_STARTUP_TIDY", legacy_name="DELETE_ALL", default_val=False
+        ),
+        help="Clear out previously generated filament files before starting (keeps your folders tidy).",
+    )
+
+    parser.add_argument(
+        "--create-per-spool",
+        type=str.lower,
+        choices=VALID_SPOOL_MODES,
+        default=get_env_choice(
+            parser,
+            "SM2S_CREATE_PER_SPOOL",
+            VALID_SPOOL_MODES,
+            legacy_name="CREATE_PER_SPOOL",
+        ),
+        help=(
+            "create one output file per spool instead of per filament. "
+            "'all': one file per spool. "
+            "'least-left': one file per filament for the spool having the least "
+            "filament left. "
+            "'most-recent': one file per filament for the spool being most "
+            "recently used."
+        ),
+    )
+
+    parsed_args = parser.parse_args()
+    if parsed_args.slicer:
+        parsed_args.slicer = Slicers(parsed_args.slicer)
+
+    # Explicit validation for mandatory directory (must be provided via CLI or env)
+    if not parsed_args.dir:
+        parser.error(
+            "the following arguments are required: -d/--dir "
+            "(or set SM2S_SLICER_CONFIG_DIR environment variable)"
+        )
+
+    return parsed_args, parser
+
+
+def setup_templates(args_obj, parser_obj):
+    """Configure Jinja2 templates environment based on slicer."""
+    config_dir = get_user_config_dir()
+    template_path = os.path.join(config_dir, f"templates-{args_obj.slicer}")
+
+    if args_obj.verbose:
+        print(f"Reading templates files from: {template_path}")
+
+    if not os.path.exists(template_path):
+        script_dir = os.path.dirname(__file__)
+        data_template_path = os.path.join(
+            script_dir, "data", f"templates-{args_obj.slicer}"
+        )
+
+        # Check if templates exist in package data
+        if os.path.exists(data_template_path):
+            template_path = data_template_path
+        else:
+            if platform.system() == "Windows":
+                print(
+                    (
+                        f'ERROR: No templates found in "{template_path}".\n'
+                        "\n"
+                        "Install them with:\n"
+                        "\n"
+                        f'mkdir "{config_dir}"\n'
+                        f'copy "{script_dir}"\\templates-* "{config_dir}\\"\n'
+                    ),
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    (
+                        f'ERROR: No templates found in "{template_path}".\n'
+                        "\n"
+                        "Install them with:\n"
+                        "\n"
+                        f"mkdir -p '{config_dir}'\n"
+                        f"cp -r '{script_dir}'/templates-* '{config_dir}/'\n"
+                    ),
+                    file=sys.stderr,
+                )
+            sys.exit(1)
+
+    if not os.path.exists(args_obj.dir):
+        print(
+            f'ERROR: The output dir "{args_obj.dir}" doesn\'t exist.', file=sys.stderr
+        )
+        sys.exit(1)
+
+    return Environment(loader=FileSystemLoader(template_path))  # nosec B701
+
 
 vendors_cache = {}  # id -> vendor dict
 filaments_cache = {}  # id -> filament dict
@@ -208,13 +250,13 @@ material_code_year_prefix = ""  # pylint: disable=invalid-name
 def add_sm2s_to_filament(filament, suffix, variant, spool=None):
     """Adds the sm2s object and spool field to filament"""
     sm2s = {
-        "name": parser.prog,
+        "name": APP_NAME,
         "version": VERSION,
         "now": time.asctime(),
         "now_int": int(time.time()),
         "slicer_suffix": suffix,
         "variant": variant.strip(),
-        "spoolman_url": args.url,
+        "spoolman_url": args.url if args else "http://localhost:8000",
     }
     filament["sm2s"] = sm2s
     # Add spool field (empty dict if not provided)
@@ -986,6 +1028,10 @@ async def connect_updates():
 
 def main():
     """Main function to run the spoolman2slicer tool"""
+    global args, templates
+    args, parser = parse_args()
+    templates = setup_templates(args, parser)
+
     if args.delete_all:
         delete_all_filaments()
 
@@ -993,7 +1039,7 @@ def main():
     # This is necessary because websocket payloads don't contain full vendor objects
     if args.updates:
         retry_delay = 5
-        _log_debug("Update mode enabled - will retry initial load until successful")
+        _log_info("Update mode enabled - will retry initial load until successful")
         while True:
             try:
                 load_and_update_all_filaments(args.url)
@@ -1038,7 +1084,11 @@ def main():
             json.JSONDecodeError,
         ) as ex:
             # Error details already logged by load_filaments_from_spoolman
-            _log_error(f"Failed to load filaments: {type(ex).__name__}")
+            if not isinstance(
+                ex, (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+            ):
+                # Connection/Timeout errors are already logged with details
+                _log_error(f"Failed to load filaments: {type(ex).__name__}")
             sys.exit(1)
         # pylint: disable=broad-exception-caught  # Need to catch all unexpected errors
         except Exception as ex:

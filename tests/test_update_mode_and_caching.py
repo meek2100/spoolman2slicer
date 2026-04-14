@@ -39,7 +39,7 @@ Path(fake_template_dir, "default.ini.template").write_text(
 
 # Mock sys.argv and user_config_dir before importing
 fake_output_dir = tempfile.mkdtemp()
-sys.argv = ["spoolman2slicer.py", "--dir", fake_output_dir, "--url", "http://test:7912"]
+sys.argv = ["spoolman2slicer.py", "--dir", fake_output_dir, "--url", "http://test:8000"]
 
 # Register cleanup handlers for temporary directories
 atexit.register(lambda: shutil.rmtree(fake_config_dir, ignore_errors=True))
