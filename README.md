@@ -119,17 +119,15 @@ To improve consistency and follow modern naming standards, several environment v
 
 **The old names still work for now (backward compatibility), but they are deprecated and will be removed in a future release.** Please update your configurations to the new values.
 
-| Type | Legacy Name (Deprecated) | New Standard Name |
-| :--- | :--- | :--- |
-| CLI | `--updates` | `--live-sync` |
-| CLI | `--delete-all` | `--startup-tidy` |
-| Env | `SPOOLMAN_URL` / `URL` | `SM2S_SPOOLMAN_URL` |
-| Env | `UPDATES` | `SM2S_LIVE_SYNC` |
-| Env | `VERBOSE` | `SM2S_VERBOSE_LOGGING` |
-| Env | `VARIANTS` | `SM2S_VARIANTS` |
-| Env | `DELETE_ALL` | `SM2S_STARTUP_TIDY` |
-| Env | `SLICER` | `SM2S_SLICER` |
-| Env | `SLICER_CONFIG_DIR` | `SM2S_SLICER_CONFIG_DIR` |
+| Type | Standard CLI Flag | New Standard Env Var | Legacy Fallback |
+| :--- | :--- | :--- | :--- |
+| CLI | `--live-sync` | `SM2S_LIVE_SYNC` | `--updates` |
+| CLI | `--startup-tidy` | `SM2S_STARTUP_TIDY` | `--delete-all` |
+| Env | `--url` | `SM2S_SPOOLMAN_URL` | `SPOOLMAN_URL` |
+| Env | `--slicer` | `SM2S_SLICER` | `SLICER` |
+| Env | `--dir` | `SM2S_SLICER_CONFIG_DIR` | |
+| Env | `--verbose` | `SM2S_VERBOSE_LOGGING` | |
+| Env | `--variants` | `SM2S_VARIANTS` | |
 
 ## Usage
 
