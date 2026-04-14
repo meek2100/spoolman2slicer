@@ -119,8 +119,10 @@ def parse_args():
 
     parser.add_argument(
         "-U",
+        "--live-sync",
         "--updates",
         action="store_true",
+        dest="live_sync",
         default=get_arg_default(
             parser, "SM2S_LIVE_SYNC", legacy_name="UPDATES", default_val=False
         ),
@@ -150,8 +152,10 @@ def parse_args():
 
     parser.add_argument(
         "-D",
+        "--startup-tidy",
         "--delete-all",
         action="store_true",
+        dest="startup_tidy",
         default=get_arg_default(
             parser, "SM2S_STARTUP_TIDY", legacy_name="DELETE_ALL", default_val=False
         ),
@@ -1028,7 +1032,7 @@ async def connect_updates():
 
 def _perform_initial_data_load():
     """Performs the initial filament data load from Spoolman."""
-    if ARGS.updates:
+    if ARGS.live_sync:
         retry_delay = 5
         _log_info("Update mode enabled - will retry initial load until successful")
         while True:
@@ -1105,12 +1109,12 @@ def main():
     ARGS, _ = parse_args()
     TEMPLATES = setup_templates(ARGS)
 
-    if ARGS.delete_all:
+    if ARGS.startup_tidy:
         delete_all_filaments()
 
     _perform_initial_data_load()
 
-    if ARGS.updates:
+    if ARGS.live_sync:
         _run_update_mode()
 
 
