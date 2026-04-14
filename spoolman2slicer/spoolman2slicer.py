@@ -9,9 +9,9 @@
 #   "appdirs==1.4.4",
 #   "Jinja2==3.1.6",
 #   "pathvalidate>=3.3.1",
-#   "requests==2.33.0",
+#   "requests==2.33.1",
 #   "urllib3>=2.6.0",
-#   "websockets==12.0",
+#   "websockets==16.0",
 # ]
 # ///
 
@@ -37,6 +37,7 @@ from websockets.asyncio.client import connect
 
 try:
     from dotenv import load_dotenv
+    load_dotenv()
 except ImportError:
     load_dotenv = None
 
@@ -70,9 +71,6 @@ filename_usage = {}
 
 def parse_args():
     """Configure and parse command line arguments with environment variable support."""
-    # Attempt to load .env file if python-dotenv is installed
-    if load_dotenv:
-        load_dotenv()
 
     parser = argparse.ArgumentParser(
         prog="spoolman2slicer",

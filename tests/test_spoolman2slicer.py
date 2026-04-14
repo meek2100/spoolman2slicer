@@ -48,8 +48,8 @@ _default_args.verbose = False
 _default_args.url = "http://test:8000"
 _default_args.variants = ""
 _default_args.create_per_spool = None
-_default_args.updates = False
-_default_args.delete_all = False
+_default_args.live_sync = False
+_default_args.startup_tidy = False
 spoolman2slicer.ARGS = _default_args
 
 # Register cleanup for the default output dir
@@ -1566,9 +1566,9 @@ class TestArgumentParsing:
         with patch.dict(os.environ, env):
             with patch("sys.argv", ["spoolman2slicer.py", "--dir", "/tmp"]):
                 args_obj, _ = spoolman2slicer.parse_args()
-                assert args_obj.updates is True
+                assert args_obj.live_sync is True
                 assert args_obj.verbose is True
-                assert args_obj.delete_all is True
+                assert args_obj.startup_tidy is True
 
     def test_invalid_slicer_env_returns_error(self):
         """Test that invalid slicer in env causes parser error"""
