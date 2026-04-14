@@ -96,15 +96,17 @@ def parse_args():
 
     parser.add_argument(
         "-D",
+        "--startup-tidy",
         "--delete-all",
         action="store_true",
+        dest="startup_tidy",
         help="delete all template configs before adding new ones",
     )
 
     args = parser.parse_args()
     args.slicer = Slicers(args.slicer)
 
-    if args.delete_all:
+    if args.startup_tidy:
         print("--delete-all is not yet implemented", file=sys.stderr)
         sys.exit(1)
 

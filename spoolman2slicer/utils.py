@@ -27,11 +27,23 @@ def is_json_slicer(slicer_name):
         return False
 
 
+def _sanitize_env_val(val):
+    """Strip quotes and whitespace from environment variable values."""
+    if val is None:
+        return None
+    val = val.strip()
+    if len(val) >= 2 and (
+        (val[0] == '"' and val[-1] == '"') or (val[0] == "'" and val[-1] == "'")
+    ):
+        val = val[1:-1]
+    return val.strip()
+
+
 def get_env_bool(name, legacy_name=None, default=False):
     """Helper to parse boolean environment variables with explicit validation."""
-    val = os.environ.get(name)
+    val = _sanitize_env_val(os.environ.get(name))
     if val is None and legacy_name:
-        val = os.environ.get(legacy_name)
+        val = _sanitize_env_val(os.environ.get(legacy_name))
 
     if not val:
         return default
@@ -59,11 +71,17 @@ def get_arg_default(parser, name, legacy_name=None, default_val=False):
         return None  # Satisfies pylint R1710; parser.error calls sys.exit
 
 
+def get_env_str(name, legacy_name=None, default=None):
+    """Fetch string value from env with sanitization and legacy fallback."""
+    val = _sanitize_env_val(os.environ.get(name))
+    if val is None and legacy_name:
+        val = _sanitize_env_val(os.environ.get(legacy_name))
+    return val if val is not None else default
+
+
 def get_env_choice(parser, name, choices, legacy_name=None, default=None):
     """Fetch value from env and validate against choices during parser initialization."""
-    val = os.environ.get(name)
-    if val is None and legacy_name:
-        val = os.environ.get(legacy_name)
+    val = get_env_str(name, legacy_name=legacy_name)
 
     if not val:
         return default
@@ -76,9 +94,7 @@ def get_env_choice(parser, name, choices, legacy_name=None, default=None):
     if legacy_name:
         env_name_str += f" (or legacy {legacy_name})"
 
-    parser.error(
-        f"Invalid {env_name_str}: {val!r}. Choose from: {choices}"
-    )
+    parser.error(f"Invalid {env_name_str}: {val!r}. Choose from: {choices}")
     return None
 
 
