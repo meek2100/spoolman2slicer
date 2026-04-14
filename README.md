@@ -113,6 +113,11 @@ If you update the filename template, update the name field too.
 
 ## Usage
 
+Python standalone or direct install = CLI  
+Docker/Docker-compose = Environment variables
+
+### Standalone / Direct Install (CLI flags)
+
 ```text
 usage: spoolman2slicer [-h] [--version] -d DIR
                           [-s {orcaslicer,crealityprint,prusaslicer,slic3r,superslicer}]
@@ -140,6 +145,42 @@ options:
                         'all': one file per spool.
                         'least-left': one file per filament for the spool having the least filament left.
                         'most-recent': one file per filament for the spool being most recently used.
+```
+
+### Docker / Docker-compose (Environment Variables)
+
+The recommended way to run `spoolman2slicer` in Docker is via environment variables in `docker-compose.yml`.
+
+| Variable | CLI Equivalent | Description |
+| :--- | :--- | :--- |
+| `SM2S_SLICER_CONFIG_DIR` | `-d / --dir` | The folder where your slicer stores its configurations. |
+| `SM2S_SLICER` | `-s / --slicer` | The name of your slicer (Fallback: `SLICER`). |
+| `SM2S_SPOOLMAN_URL` | `-u / --url` | The web address of your Spoolman server (Fallback: `SPOOLMAN_URL`). |
+| `SM2S_LIVE_SYNC` | `-U / --updates` | Set to `true` to sync changes in real-time. |
+| `SM2S_VERBOSE_LOGGING` | `-v / --verbose` | Set to `true` for detailed troubleshooting info. |
+| `SM2S_VARIANTS` | `-V / --variants` | Different versions for different printers. |
+| `SM2S_STARTUP_TIDY` | `-D / --delete-all` | Set to `true` to clean old files on startup. |
+| `SM2S_CREATE_PER_SPOOL` | `--create-per-spool` | Create separate files for each spool. |
+
+```yaml
+services:
+  spoolman2slicer:
+    image: ghcr.io/bofh69/spoolman2slicer:latest
+    container_name: spoolman2slicer
+    restart: unless-stopped
+    environment:
+      - SM2S_SLICER_CONFIG_DIR=/configs
+      - SM2S_SPOOLMAN_URL=http://spoolman.local:7912
+      - SM2S_SLICER=prusaslicer
+      - SM2S_LIVE_SYNC=true
+      - SM2S_STARTUP_TIDY=false
+    volumes:
+      - ./configs:/configs
+```
+
+Before using it, update the values in the `environment` section to match your setup and run:
+```sh
+docker-compose up -d
 ```
 
 ## Installation
@@ -170,18 +211,27 @@ path-to-venv/bin/spoolman2slicer
 
 ### Using Docker/Docker-Compose
 
-spoolman2slicer can be run from docker.
+The recommended way to run `spoolman2slicer` in Docker is via environment variables in `docker-compose.yml`. This removes the need to override the `entrypoint` command.
 
-Included is a Dockerfile and docker-compose config. Before using it,
-update the environment variables and mount points in docker-compose and
-run:
+```yaml
+services:
+  spoolman2slicer:
+    image: ghcr.io/bofh69/spoolman2slicer:latest
+    container_name: spoolman2slicer
+    restart: unless-stopped
+    environment:
+      - SM2S_SLICER_CONFIG_DIR=/configs
+      - SM2S_SPOOLMAN_URL=http://spoolman.local:7912
+      - SM2S_SLICER=prusaslicer
+      - SM2S_LIVE_SYNC=true
+      - SM2S_STARTUP_TIDY=false
+    volumes:
+      - ./configs:/configs
+```
+
+Before using it, update the values in the `environment` section to match your setup and run:
 ```sh
-  docker-compose up -d
-```
-
-for other arguments to the command, use:
-```
-  entrypoint: [ "sh", "-c", "python3 ./spoolman2slicer/spoolman2slicer.py #AddYourArgumentsHere" ]
+docker-compose up -d
 ```
 
 
