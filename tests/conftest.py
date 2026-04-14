@@ -14,6 +14,11 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from unittest.mock import MagicMock
+from spoolman2slicer.spoolman_common.api import SpoolmanClient
+from spoolman2slicer.renderer import FilamentRenderer
+from spoolman2slicer.engine import SyncEngine
+from spoolman2slicer.constants import Slicers
 
 
 @pytest.fixture
@@ -153,3 +158,32 @@ def temp_config_files():
         )
 
         yield tmpdir
+
+
+@pytest.fixture
+def mock_spoolman_client():
+    """Returns a mocked SpoolmanClient."""
+    client = MagicMock(spec=SpoolmanClient)
+    client.base_url = "http://test:7912"
+    return client
+
+
+@pytest.fixture
+def filament_renderer(temp_template_dir, temp_output_dir):
+    """Returns a FilamentRenderer pre-configured with temporary directories."""
+    return FilamentRenderer(
+        template_path=temp_template_dir,
+        output_dir=temp_output_dir,
+        slicer=Slicers.SUPERSLICER
+    )
+
+
+@pytest.fixture
+def sync_engine(mock_spoolman_client, filament_renderer):
+    """Returns a SyncEngine wired for testing."""
+    return SyncEngine(
+        client=mock_spoolman_client,
+        renderer=filament_renderer,
+        variants=[""],
+        create_per_spool=None
+    )

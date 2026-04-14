@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 class PluginManager:
     """Manages the lifecycle and installation of Spoolman Tools plugins."""
-
     PLUGINS = {
         "s2k": {
             "pkg": "spool2klipper",
@@ -26,8 +25,8 @@ class PluginManager:
         },
         "n2k": {
             "pkg": "nfc2klipper",
-            "module": "nfc2klipper.orchestrator",
-            "class": "Nfc2KlipperOrchestrator",
+            "module": "nfc2klipper.nfc2klipper",
+            "class": "Nfc2KlipperApp",
             "env_prefix": "N2K_"
         }
     }
@@ -99,7 +98,6 @@ class PluginManager:
             # Initialize based on plugin type
             if plugin_key == "s2k":
                 # Spool2Klipper is async
-                # We'll need to wrap it if we want it to run in its own loop or share the host's
                 from spool2klipper.spool2klipper import load_config
                 s2k_config = load_config()
                 instance = plugin_class(s2k_config)
@@ -108,13 +106,13 @@ class PluginManager:
                     "type": "async"
                 }
             elif plugin_key == "n2k":
-                # NFC2Klipper uses orchestrated mode
+                # NFC2Klipper is also async
                 from nfc2klipper.lib.config import Nfc2KlipperConfig
                 n2k_cfg = Nfc2KlipperConfig.get_config()
                 instance = plugin_class(n2k_cfg)
                 self.active_plugins[plugin_key] = {
                     "instance": instance,
-                    "type": "threaded"
+                    "type": "async"
                 }
             
             logger.info(f"Loaded plugin: {plugin_key}")

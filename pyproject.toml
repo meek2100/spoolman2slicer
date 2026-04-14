@@ -72,6 +72,7 @@ spoolman2slicer = "spoolman2slicer.spoolman2slicer:main"
 create-template-files = "spoolman2slicer.create_template_files:main"
 
 [tool.setuptools]
+package-dir = {"" = "src"}
 packages = ["spoolman2slicer"]
 include-package-data = true
 
@@ -104,7 +105,7 @@ tag = true
 push = true
 
 [tool.bumpver.file_patterns]
-"spoolman2slicer/constants.py" = [
+"src/spoolman2slicer/constants.py" = [
     '^VERSION = "{pep440_version}"',
 ]
 "pyproject.toml" = [
