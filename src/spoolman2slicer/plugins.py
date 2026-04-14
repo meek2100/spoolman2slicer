@@ -100,6 +100,8 @@ class PluginManager:
                 # Spool2Klipper is async
                 import spool2klipper.spool2klipper as s2k_mod
                 s2k_config = s2k_mod.load_config()
+                # Inject host config
+                s2k_config.setdefault("spool2klipper", {})["spoolman_url"] = self.spoolman_url
                 instance = plugin_class(s2k_config)
                 self.active_plugins[plugin_key] = {
                     "instance": instance,
@@ -108,7 +110,9 @@ class PluginManager:
             elif plugin_key == "n2k":
                 # NFC2Klipper is also async
                 import nfc2klipper.lib.config as n2k_cfg_mod
-                n2k_cfg = n2k_cfg_mod.Nfc2KlipperConfig.get_config()
+                n2k_cfg = n2k_cfg_mod.Nfc2KlipperConfig.get_config() or {}
+                # Inject host config
+                n2k_cfg.setdefault("spoolman", {})["spoolman-url"] = self.spoolman_url
                 instance = plugin_class(n2k_cfg)
                 self.active_plugins[plugin_key] = {
                     "instance": instance,

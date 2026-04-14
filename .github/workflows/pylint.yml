@@ -21,4 +21,4 @@ jobs:
         pip install .
     - name: Analysing the code with pylint
       run: |
-        pylint spoolman2slicer/*.py
+        pylint src/spoolman2slicer

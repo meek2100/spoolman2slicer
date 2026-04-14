@@ -133,12 +133,14 @@ options:
   -s {orcaslicer,crealityprint,prusaslicer,slic3r,superslicer}, --slicer {orcaslicer,crealityprint,prusaslicer,slic3r,superslicer}
                         the slicer
   -u URL, --url URL     URL for the Spoolman installation
-  -U, --updates         keep running and update filament configs if they're
+  -U, --live-sync, --updates
+                        keep running and update filament configs if they're
                         updated in Spoolman
   -v, --verbose         verbose output
   -V VALUE1,VALUE2.., --variants VALUE1,VALUE2..
                         write one template per value, separated by comma
-  -D, --delete-all      delete all filament configs before adding existing
+  -D, --startup-tidy, --delete-all
+                        delete all filament configs before adding existing
                         ones
   --create-per-spool {all,least-left,most-recent}
                         create one output file per spool instead of per filament.
@@ -200,7 +202,7 @@ pip install spoolman2slicer
 ```
 
 The default templates files are then under
-`venv/lib/python3.12/site-packages/spoolman2slicer/data/`.
+`venv/lib/python3.14/site-packages/spoolman2slicer/data/`.
 
 `spoolman2slicer` is then runable from the virtual environment:
 ```sh
