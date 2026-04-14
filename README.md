@@ -113,6 +113,24 @@ The default template files also use `- {{spool.id}}` at
 the end of the "name" field in the templates that use a name.
 If you update the filename template, update the name field too.
 
+### ⚠️ Deprecation Notice (v0.1.1)
+
+To improve consistency and follow modern naming standards, several environment variables and CLI flags have been renamed or standardized with the `SM2S_` prefix.
+
+**The old names still work for now (backward compatibility), but they are deprecated and will be removed in a future release.** Please update your configurations to the new values.
+
+| Type | Legacy Name (Deprecated) | New Standard Name |
+| :--- | :--- | :--- |
+| CLI | `--updates` | `--live-sync` |
+| CLI | `--delete-all` | `--startup-tidy` |
+| Env | `SPOOLMAN_URL` / `URL` | `SM2S_SPOOLMAN_URL` |
+| Env | `UPDATES` | `SM2S_LIVE_SYNC` |
+| Env | `VERBOSE` | `SM2S_VERBOSE_LOGGING` |
+| Env | `VARIANTS` | `SM2S_VARIANTS` |
+| Env | `DELETE_ALL` | `SM2S_STARTUP_TIDY` |
+| Env | `SLICER` | `SM2S_SLICER` |
+| Env | `SLICER_CONFIG_DIR` | `SM2S_SLICER_CONFIG_DIR` |
+
 ## Usage
 
 Python standalone or direct install = CLI
@@ -123,7 +141,8 @@ Docker/Docker-compose = Environment variables
 ```text
 usage: spoolman2slicer [-h] [--version] -d DIR
                           [-s {orcaslicer,crealityprint,prusaslicer,slic3r,superslicer}]
-                          [-u URL] [-U] [-v] [-V VALUE1,VALUE2..] [-D]
+                          [-u URL] [--live-sync] [-v] [-V VALUE1,VALUE2..]
+                          [--startup-tidy]
                           [--create-per-spool {all,least-left,most-recent}]
 
 Fetches data from Spoolman and creates slicer filament config files.
@@ -135,13 +154,15 @@ options:
   -s {orcaslicer,crealityprint,prusaslicer,slic3r,superslicer}, --slicer {orcaslicer,crealityprint,prusaslicer,slic3r,superslicer}
                         the slicer
   -u URL, --url URL     URL for the Spoolman installation
-  -U, --updates         keep running and update filament configs if they're
-                        updated in Spoolman
+  -U, --live-sync, --updates
+                        keep running and update filament configs if they're
+                        updated in Spoolman (real-time)
   -v, --verbose         verbose output
   -V VALUE1,VALUE2.., --variants VALUE1,VALUE2..
                         write one template per value, separated by comma
-  -D, --delete-all      delete all filament configs before adding existing
-                        ones
+  -D, --startup-tidy, --delete-all
+                        delete all filament configs before adding existing
+                        ones (prevents stale files)
   --create-per-spool {all,least-left,most-recent}
                         create one output file per spool instead of per filament.
                         'all': one file per spool.
@@ -158,10 +179,10 @@ The recommended way to run `spoolman2slicer` in Docker is via environment variab
 | `SM2S_SLICER_CONFIG_DIR` | `-d / --dir`         | The folder where your slicer stores its configurations.             |
 | `SM2S_SLICER`            | `-s / --slicer`      | The name of your slicer (Fallback: `SLICER`).                       |
 | `SM2S_SPOOLMAN_URL`      | `-u / --url`         | The web address of your Spoolman server (Fallback: `SPOOLMAN_URL`). |
-| `SM2S_LIVE_SYNC`         | `-U / --updates`     | Set to `true` to sync changes in real-time.                         |
-| `SM2S_VERBOSE_LOGGING`   | `-v / --verbose`     | Set to `true` for detailed troubleshooting info.                    |
-| `SM2S_VARIANTS`          | `-V / --variants`    | Different versions for different printers.                          |
-| `SM2S_STARTUP_TIDY`      | `-D / --delete-all`  | Set to `true` to clean old files on startup.                        |
+| `SM2S_LIVE_SYNC`         | `-U / --live-sync`  | Set to `true` to sync changes in real-time.                         |
+| `SM2S_VERBOSE_LOGGING`   | `-v / --verbose`    | Set to `true` for detailed troubleshooting info.                    |
+| `SM2S_VARIANTS`          | `-V / --variants`   | Different versions for different printers.                          |
+| `SM2S_STARTUP_TIDY`      | `-D / --startup-tidy` | Set to `true` to clean old files on startup.                        |
 | `SM2S_CREATE_PER_SPOOL`  | `--create-per-spool` | Create separate files for each spool.                               |
 
 ```yaml
@@ -433,7 +454,7 @@ the variant first in the filename, if given. The other template files don't use 
 ### Ubuntu & OrcaSlicer
 
 ```sh
-spoolman2slicer -s orcaslicer -U -d ~/.config/OrcaSlicer/user/default/filament/
+spoolman2slicer -s orcaslicer --live-sync -d ~/.config/OrcaSlicer/user/default/filament/
 ```
 
 ### Ubuntu & CrealityPrint
