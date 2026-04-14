@@ -20,6 +20,10 @@ from .spoolman_common.api import SpoolmanClient
 from .renderer import FilamentRenderer
 from .engine import SyncEngine
 
+# Global objects
+ARGS = None
+TEMPLATES = None
+
 def get_parser() -> argparse.ArgumentParser:
     """Initialize the argument parser."""
     parser = argparse.ArgumentParser(
@@ -51,14 +55,15 @@ def get_parser() -> argparse.ArgumentParser:
         metavar="URL",
         default=os.environ.get(
             "SM2S_SPOOLMAN_URL",
-            os.environ.get("SPOOLMAN_URL", "http://localhost:7912"),
+            os.environ.get("SPOOLMAN_URL", "http://localhost:8000"),
         ),
         help="The web address of your Spoolman server.",
     )
 
     parser.add_argument(
-        "-U", "--updates",
+        "-U", "--live-sync", "--updates",
         action="store_true",
+        dest="live_sync",
         default=get_arg_default(parser, "SM2S_LIVE_SYNC", default_val=False),
         help="Keep the tool running to automatically sync changes from Spoolman in real-time.",
     )
@@ -78,8 +83,9 @@ def get_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "-D", "--delete-all",
+        "-D", "--startup-tidy", "--delete-all",
         action="store_true",
+        dest="startup_tidy",
         default=get_arg_default(parser, "SM2S_STARTUP_TIDY", default_val=False),
         help="Clear out previously generated filament files before starting (keeps your folders tidy).",
     )
@@ -109,21 +115,21 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 def main():
-    """Main application entry point."""
+    global ARGS
     parser = get_parser()
-    args = parser.parse_args()
-    args.slicer = Slicers(args.slicer)
+    ARGS = parser.parse_args()
+    ARGS.slicer = Slicers(ARGS.slicer)
 
     # Validation
-    if not args.dir:
+    if not ARGS.dir:
         parser.error("The following arguments are required: -d/--dir (or set SM2S_SLICER_CONFIG_DIR)")
     
-    if not os.path.exists(args.dir):
-        print(f"ERROR: Output directory does not exist: {args.dir}", file=sys.stderr)
+    if not os.path.exists(ARGS.dir):
+        print(f"ERROR: Output directory does not exist: {ARGS.dir}", file=sys.stderr)
         sys.exit(1)
 
     # Setup Logging
-    log_level = logging.DEBUG if args.verbose else logging.INFO
+    log_level = logging.DEBUG if ARGS.verbose else logging.INFO
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s %(levelname)s - %(message)s",
@@ -132,29 +138,29 @@ def main():
 
     # Determine Template Path
     config_dir = get_user_config_dir()
-    template_path = os.path.join(config_dir, f"templates-{args.slicer}")
+    template_path = os.path.join(config_dir, f"templates-{ARGS.slicer}")
     
     if not os.path.exists(template_path):
         print(f"ERROR: No templates found in {template_path}. Please run setup or install templates.", file=sys.stderr)
         sys.exit(1)
 
     # Initialize Components
-    client = SpoolmanClient(args.url)
-    renderer = FilamentRenderer(template_path, args.dir, args.slicer)
+    client = SpoolmanClient(ARGS.url)
+    renderer = FilamentRenderer(template_path, ARGS.dir, ARGS.slicer)
     
     engine = SyncEngine(
         client=client,
         renderer=renderer,
-        variants=args.variants.split(",") if args.variants else [""],
-        create_per_spool=args.create_per_spool,
-        verbose=args.verbose
+        variants=ARGS.variants.split(",") if ARGS.variants else [""],
+        create_per_spool=ARGS.create_per_spool,
+        verbose=ARGS.verbose
     )
 
     # Initialize Plugin Manager
-    plugin_mgr = PluginManager(args.url, verbose=args.verbose)
-    if args.with_s2k:
+    plugin_mgr = PluginManager(ARGS.url, verbose=ARGS.verbose)
+    if ARGS.with_s2k:
         plugin_mgr.load_plugin("s2k")
-    if args.with_n2k:
+    if ARGS.with_n2k:
         plugin_mgr.load_plugin("n2k")
 
     # Execution
@@ -162,16 +168,16 @@ def main():
         # Initial sync with retry logic for update mode
         while True:
             try:
-                engine.sync_all(tidy=args.delete_all)
+                engine.sync_all(tidy=ARGS.startup_tidy)
                 break
             except Exception as e:
-                if not args.updates:
+                if not ARGS.live_sync:
                     raise
                 logging.warning(f"Initial sync failed: {e}. Retrying in 5s...")
                 time.sleep(5)
         
         # Real-time monitoring
-        if args.updates:
+        if ARGS.live_sync:
             print("Sync complete. Monitoring Spoolman for updates...")
             loop = asyncio.get_event_loop()
             plugin_mgr.start_plugins(loop=loop)
@@ -181,7 +187,7 @@ def main():
         plugin_mgr.stop_plugins()
     except Exception as e:
         logging.error(f"Fatal error: {e}")
-        if args.verbose:
+        if ARGS.verbose:
             import traceback
             traceback.print_exc()
         sys.exit(1)

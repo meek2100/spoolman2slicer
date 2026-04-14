@@ -10,7 +10,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 import requests
-from websockets.client import connect, WebSocketClientProtocol
+from websockets.asyncio.client import connect
 
 from .constants import REQUEST_TIMEOUT_SECONDS
 
@@ -206,7 +206,7 @@ class SpoolmanClient:
 
     # --- WebSocket ---
 
-    async def connect_websocket(self) -> WebSocketClientProtocol:
+    async def connect_websocket(self):
         """Create a websocket connection for real-time monitoring."""
         ws_url = self.base_url.replace("http://", "ws://").replace("https://", "wss://")
         ws_url = f"{ws_url}/api/v1/event"
