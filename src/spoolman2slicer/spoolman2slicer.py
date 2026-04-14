@@ -173,7 +173,8 @@ def main():
         # Real-time monitoring
         if args.updates:
             print("Sync complete. Monitoring Spoolman for updates...")
-            plugin_mgr.start_plugins()
+            loop = asyncio.get_event_loop()
+            plugin_mgr.start_plugins(loop=loop)
             asyncio.run(engine.run_loop())
     except KeyboardInterrupt:
         print("\nShutting down gracefully...")

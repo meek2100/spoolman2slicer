@@ -98,8 +98,8 @@ class PluginManager:
             # Initialize based on plugin type
             if plugin_key == "s2k":
                 # Spool2Klipper is async
-                from spool2klipper.spool2klipper import load_config
-                s2k_config = load_config()
+                import spool2klipper.spool2klipper as s2k_mod
+                s2k_config = s2k_mod.load_config()
                 instance = plugin_class(s2k_config)
                 self.active_plugins[plugin_key] = {
                     "instance": instance,
@@ -107,8 +107,8 @@ class PluginManager:
                 }
             elif plugin_key == "n2k":
                 # NFC2Klipper is also async
-                from nfc2klipper.lib.config import Nfc2KlipperConfig
-                n2k_cfg = Nfc2KlipperConfig.get_config()
+                import nfc2klipper.lib.config as n2k_cfg_mod
+                n2k_cfg = n2k_cfg_mod.Nfc2KlipperConfig.get_config()
                 instance = plugin_class(n2k_cfg)
                 self.active_plugins[plugin_key] = {
                     "instance": instance,
