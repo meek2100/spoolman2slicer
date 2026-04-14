@@ -83,7 +83,7 @@ def parse_args():
         "-d",
         "--dir",
         metavar="DIR",
-        default=get_env_str("SM2S_SLICER_CONFIG_DIR", legacy_name="DIR"),
+        default=get_env_str("SM2S_SLICER_CONFIG_DIR"),
         help="The folder where your slicer stores its filament configurations.",
     )
 
@@ -110,7 +110,7 @@ def parse_args():
         default=get_env_str(
             "SM2S_SPOOLMAN_URL",
             legacy_name="SPOOLMAN_URL",
-            default=get_env_str("URL", default="http://localhost:8000"),
+            default="http://localhost:8000",
         ),
         help="The web address of your Spoolman server.",
     )
@@ -121,9 +121,7 @@ def parse_args():
         "--updates",
         action="store_true",
         dest="live_sync",
-        default=get_arg_default(
-            parser, "SM2S_LIVE_SYNC", legacy_name="UPDATES", default_val=False
-        ),
+        default=get_arg_default(parser, "SM2S_LIVE_SYNC", default_val=False),
         help="Keep the tool running to automatically sync changes from Spoolman in real-time.",
     )
 
@@ -131,9 +129,7 @@ def parse_args():
         "-v",
         "--verbose",
         action="store_true",
-        default=get_arg_default(
-            parser, "SM2S_VERBOSE_LOGGING", legacy_name="VERBOSE", default_val=False
-        ),
+        default=get_arg_default(parser, "SM2S_VERBOSE_LOGGING", default_val=False),
         help="Show detailed progress and error information for troubleshooting.",
     )
 
@@ -141,7 +137,7 @@ def parse_args():
         "-V",
         "--variants",
         metavar="VALUE1,VALUE2..",
-        default=get_env_str("SM2S_VARIANTS", legacy_name="VARIANTS", default=""),
+        default=get_env_str("SM2S_VARIANTS", default=""),
         help=(
             "Create different filament versions for different printers "
             "(e.g., 'Printer1,Printer2')."
@@ -154,9 +150,7 @@ def parse_args():
         "--delete-all",
         action="store_true",
         dest="startup_tidy",
-        default=get_arg_default(
-            parser, "SM2S_STARTUP_TIDY", legacy_name="DELETE_ALL", default_val=False
-        ),
+        default=get_arg_default(parser, "SM2S_STARTUP_TIDY", default_val=False),
         help=(
             "Clear out previously generated filament files before starting "
             "(keeps your folders tidy)."
