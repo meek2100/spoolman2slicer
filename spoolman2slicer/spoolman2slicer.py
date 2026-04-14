@@ -33,7 +33,7 @@ import traceback
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from pathvalidate import sanitize_filename
 import requests
-from websockets.client import connect
+from websockets.asyncio.client import connect
 
 from .constants import (
     VERSION,
