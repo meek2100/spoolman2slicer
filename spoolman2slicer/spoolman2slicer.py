@@ -193,42 +193,42 @@ def parse_args():
 def setup_templates(args_obj):
     """Configure Jinja2 TEMPLATES environment based on slicer."""
     config_dir = get_user_config_dir()
-    template_path = os.path.join(config_dir, f"TEMPLATES-{args_obj.slicer}")
+    template_path = os.path.join(config_dir, f"templates-{args_obj.slicer}")
 
     if args_obj.verbose:
-        print(f"Reading TEMPLATES files from: {template_path}")
+        print(f"Reading templates files from: {template_path}")
 
     if not os.path.exists(template_path):
         script_dir = os.path.dirname(__file__)
         data_template_path = os.path.join(
-            script_dir, "data", f"TEMPLATES-{args_obj.slicer}"
+            script_dir, "data", f"templates-{args_obj.slicer}"
         )
 
-        # Check if TEMPLATES exist in package data
+        # Check if templates exist in package data
         if os.path.exists(data_template_path):
             template_path = data_template_path
         else:
             if platform.system() == "Windows":
                 print(
                     (
-                        f'ERROR: No TEMPLATES found in "{template_path}".\n'
+                        f'ERROR: No templates found in "{template_path}".\n'
                         "\n"
                         "Install them with:\n"
                         "\n"
                         f'mkdir "{config_dir}"\n'
-                        f'copy "{script_dir}"\\TEMPLATES-* "{config_dir}\\"\n'
+                        f'copy "{script_dir}"\\templates-* "{config_dir}\\"\n'
                     ),
                     file=sys.stderr,
                 )
             else:
                 print(
                     (
-                        f'ERROR: No TEMPLATES found in "{template_path}".\n'
+                        f'ERROR: No templates found in "{template_path}".\n'
                         "\n"
                         "Install them with:\n"
                         "\n"
                         f"mkdir -p '{config_dir}'\n"
-                        f"cp -r '{script_dir}'/TEMPLATES-* '{config_dir}/'\n"
+                        f"cp -r '{script_dir}'/templates-* '{config_dir}/'\n"
                     ),
                     file=sys.stderr,
                 )
