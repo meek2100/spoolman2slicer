@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 Sebastian Andersson <sebastian@bittr.nu>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-FROM python:3.10-slim
+FROM python:3.14-slim
 
 # Make UID and GID configurable
 ARG USER_UID=1000
