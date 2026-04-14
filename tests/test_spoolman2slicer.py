@@ -36,7 +36,7 @@ Path(fake_template_dir, "default.ini.template").write_text(
 )
 
 # Mock user_config_dir and import the module
-# We need to ensure spoolman2slicer.args is set for most tests
+# We need to ensure spoolman2slicer.ARGS is set for most tests
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from spoolman2slicer import spoolman2slicer
 
@@ -50,7 +50,7 @@ _default_args.variants = ""
 _default_args.create_per_spool = None
 _default_args.updates = False
 _default_args.delete_all = False
-spoolman2slicer.args = _default_args
+spoolman2slicer.ARGS = _default_args
 
 # Register cleanup for the default output dir
 atexit.register(lambda: shutil.rmtree(_default_args.dir, ignore_errors=True))
@@ -64,7 +64,7 @@ def reset_caches():
     spoolman2slicer.filename_usage.clear()
 
     # Restore default args
-    spoolman2slicer.args = _default_args
+    spoolman2slicer.ARGS = _default_args
     yield
 
 
@@ -73,25 +73,25 @@ class TestConfigSuffix:
 
     def test_superslicer_suffix(self):
         """Test SuperSlicer returns ini suffix"""
-        with patch.object(spoolman2slicer.args, "slicer", Slicers.SUPERSLICER):
+        with patch.object(spoolman2slicer.ARGS, "slicer", Slicers.SUPERSLICER):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["ini"]
 
     def test_prusaslicer_suffix(self):
         """Test PrusaSlicer returns ini suffix"""
-        with patch.object(spoolman2slicer.args, "slicer", Slicers.PRUSA):
+        with patch.object(spoolman2slicer.ARGS, "slicer", Slicers.PRUSA):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["ini"]
 
     def test_orcaslicer_suffix(self):
         """Test OrcaSlicer returns json and info suffixes"""
-        with patch.object(spoolman2slicer.args, "slicer", Slicers.ORCA):
+        with patch.object(spoolman2slicer.ARGS, "slicer", Slicers.ORCA):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["json", "info"]
 
     def test_crealityprint_suffix(self):
         """Test CrealityPrint returns json and info suffixes"""
-        with patch.object(spoolman2slicer.args, "slicer", Slicers.CREALITY):
+        with patch.object(spoolman2slicer.ARGS, "slicer", Slicers.CREALITY):
             result = spoolman2slicer.get_config_suffix()
             assert result == ["json", "info"]
 
@@ -216,8 +216,8 @@ class TestFilenameGeneration:
     ):
         """Test filename generation with templates"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
         ):
             # Setup template mock
             from jinja2 import Environment, FileSystemLoader
@@ -243,8 +243,8 @@ class TestFilenameGeneration:
     ):
         """Test filename generation with variant"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -271,9 +271,9 @@ class TestTemplateRendering:
     ):
         """Test that write_filament creates a file"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -306,9 +306,9 @@ class TestTemplateRendering:
     ):
         """Test that material-specific templates are used when available"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -340,9 +340,9 @@ class TestFileOperations:
     ):
         """Test that same content doesn't rewrite file"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", True),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", True),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -372,9 +372,9 @@ class TestFileOperations:
     ):
         """Test filament deletion"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -447,10 +447,10 @@ class TestVariants:
     ):
         """Test that multiple variants create multiple files"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", "printer1,printer2"),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", "printer1,printer2"),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -482,10 +482,10 @@ class TestSlicerTypes:
     ):
         """Test OrcaSlicer JSON file generation"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "slicer", Slicers.ORCA),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "slicer", Slicers.ORCA),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -517,10 +517,10 @@ class TestSlicerTypes:
     ):
         """Test CrealityPrint JSON file generation"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "slicer", Slicers.CREALITY),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "slicer", Slicers.CREALITY),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -554,7 +554,7 @@ class TestAddSm2sToFilament:
     def test_add_sm2s_data(self, sample_filament_data):
         """Test that sm2s metadata is added correctly"""
         with (
-            patch.object(spoolman2slicer.args, "url", "http://test.local:8000"),
+            patch.object(spoolman2slicer.ARGS, "url", "http://test.local:8000"),
             patch("time.time", return_value=1234567890.0),
             patch("time.asctime", return_value="Mon Jan 1 00:00:00 2024"),
         ):
@@ -580,10 +580,10 @@ class TestWebsocketHandlers:
     ):
         """Test handling of spool added messages"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -609,10 +609,10 @@ class TestWebsocketHandlers:
     ):
         """Test handling of filament updated messages"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -665,9 +665,9 @@ class TestErrorHandling:
     ):
         """Test fallback to default template when material template not found"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
         ):
             from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
@@ -713,7 +713,7 @@ class TestDeleteAll:
         )  # Should not delete due to extension
 
         with (
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
             patch.object(spoolman2slicer, "get_config_suffix", return_value=["ini"]),
         ):
             spoolman2slicer.delete_all_filaments()
@@ -727,7 +727,7 @@ class TestDeleteAll:
         (Path(temp_output_dir) / "manual.ini").write_text("manual content")
 
         with (
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
             patch.object(spoolman2slicer, "get_config_suffix", return_value=["ini"]),
         ):
             spoolman2slicer.delete_all_filaments()
@@ -744,7 +744,7 @@ class TestCreatePerSpool:
         spool_data = {"id": 1, "spool_weight": 200.0, "archived": False}
 
         with (
-            patch.object(spoolman2slicer.args, "url", "http://test.local:8000"),
+            patch.object(spoolman2slicer.ARGS, "url", "http://test.local:8000"),
             patch("time.time", return_value=1234567890.0),
             patch("time.asctime", return_value="Mon Jan 1 00:00:00 2024"),
         ):
@@ -766,7 +766,7 @@ class TestCreatePerSpool:
     def test_add_sm2s_without_spool_data(self, sample_filament_data):
         """Test that add_sm2s_to_filament adds empty spool dict when no spool provided"""
         with (
-            patch.object(spoolman2slicer.args, "url", "http://test.local:8000"),
+            patch.object(spoolman2slicer.ARGS, "url", "http://test.local:8000"),
             patch("time.time", return_value=1234567890.0),
             patch("time.asctime", return_value="Mon Jan 1 00:00:00 2024"),
         ):
@@ -848,11 +848,11 @@ class TestCreatePerSpool:
         )
 
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
-            patch.object(spoolman2slicer.args, "create_per_spool", "all"),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
+            patch.object(spoolman2slicer.ARGS, "create_per_spool", "all"),
             patch("requests.get") as mock_get,
         ):
             from jinja2 import Environment, FileSystemLoader
@@ -944,11 +944,11 @@ class TestCreatePerSpool:
         ]
 
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
-            patch.object(spoolman2slicer.args, "create_per_spool", "least-left"),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
+            patch.object(spoolman2slicer.ARGS, "create_per_spool", "least-left"),
             patch("requests.get") as mock_get,
         ):
             from jinja2 import Environment, FileSystemLoader
@@ -1051,11 +1051,11 @@ class TestCreatePerSpool:
         ]
 
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
-            patch.object(spoolman2slicer.args, "create_per_spool", "most-recent"),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
+            patch.object(spoolman2slicer.ARGS, "create_per_spool", "most-recent"),
             patch("requests.get") as mock_get,
         ):
             from jinja2 import Environment, FileSystemLoader
@@ -1124,11 +1124,11 @@ class TestCreatePerSpool:
         ]
 
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
-            patch.object(spoolman2slicer.args, "create_per_spool", "least-left"),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
+            patch.object(spoolman2slicer.ARGS, "create_per_spool", "least-left"),
             patch("requests.get") as mock_get,
         ):
             from jinja2 import Environment, FileSystemLoader
@@ -1164,8 +1164,8 @@ class TestCreatePerSpool:
         )
 
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -1180,12 +1180,12 @@ class TestCreatePerSpool:
             sample_filament_data["spool"] = {"id": 42}
 
             # Test with --create-per-spool all
-            with patch.object(spoolman2slicer.args, "create_per_spool", "all"):
+            with patch.object(spoolman2slicer.ARGS, "create_per_spool", "all"):
                 filename = spoolman2slicer.get_filament_filename(sample_filament_data)
                 assert "42.ini" in filename
 
             # Test without --create-per-spool
-            with patch.object(spoolman2slicer.args, "create_per_spool", None):
+            with patch.object(spoolman2slicer.ARGS, "create_per_spool", None):
                 filename = spoolman2slicer.get_filament_filename(sample_filament_data)
                 assert "42.ini" not in filename
 
@@ -1236,10 +1236,10 @@ class TestAtomicWrites:
     ):
         """Test that write_filament uses atomic writes"""
         with (
-            patch.object(spoolman2slicer, "templates") as mock_templates,
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
+            patch.object(spoolman2slicer, "TEMPLATES") as mock_templates,
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
         ):
             from jinja2 import Environment, FileSystemLoader
 
@@ -1300,10 +1300,10 @@ class TestVendorNameChange:
         spoolman2slicer.spools_cache[100] = spool
 
         with (
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
-            patch.object(spoolman2slicer.args, "create_per_spool", None),
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
+            patch.object(spoolman2slicer.ARGS, "create_per_spool", None),
             patch.object(spoolman2slicer, "get_config_suffix", return_value=["ini"]),
         ):
             from jinja2 import Environment, FileSystemLoader
@@ -1311,7 +1311,7 @@ class TestVendorNameChange:
             loader = FileSystemLoader(temp_template_dir)
             env = Environment(loader=loader)
 
-            with patch.object(spoolman2slicer, "templates") as mock_templates:
+            with patch.object(spoolman2slicer, "TEMPLATES") as mock_templates:
                 mock_templates.get_template = env.get_template
 
                 # Write initial file with old vendor name
@@ -1371,10 +1371,10 @@ class TestVendorNameChange:
         spoolman2slicer.spools_cache[100] = spool
 
         with (
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
-            patch.object(spoolman2slicer.args, "create_per_spool", "all"),
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
+            patch.object(spoolman2slicer.ARGS, "create_per_spool", "all"),
             patch.object(spoolman2slicer, "get_config_suffix", return_value=["ini"]),
         ):
             from jinja2 import Environment, FileSystemLoader
@@ -1382,7 +1382,7 @@ class TestVendorNameChange:
             loader = FileSystemLoader(temp_template_dir)
             env = Environment(loader=loader)
 
-            with patch.object(spoolman2slicer, "templates") as mock_templates:
+            with patch.object(spoolman2slicer, "TEMPLATES") as mock_templates:
                 mock_templates.get_template = env.get_template
 
                 # Write initial file with old vendor name
@@ -1460,10 +1460,10 @@ class TestVendorNameChange:
         spoolman2slicer.spools_cache[101] = spool2
 
         with (
-            patch.object(spoolman2slicer.args, "dir", temp_output_dir),
-            patch.object(spoolman2slicer.args, "verbose", False),
-            patch.object(spoolman2slicer.args, "variants", ""),
-            patch.object(spoolman2slicer.args, "create_per_spool", None),
+            patch.object(spoolman2slicer.ARGS, "dir", temp_output_dir),
+            patch.object(spoolman2slicer.ARGS, "verbose", False),
+            patch.object(spoolman2slicer.ARGS, "variants", ""),
+            patch.object(spoolman2slicer.ARGS, "create_per_spool", None),
             patch.object(spoolman2slicer, "get_config_suffix", return_value=["ini"]),
         ):
             from jinja2 import Environment, FileSystemLoader
@@ -1471,7 +1471,7 @@ class TestVendorNameChange:
             loader = FileSystemLoader(temp_template_dir)
             env = Environment(loader=loader)
 
-            with patch.object(spoolman2slicer, "templates") as mock_templates:
+            with patch.object(spoolman2slicer, "TEMPLATES") as mock_templates:
                 mock_templates.get_template = env.get_template
 
                 # Write initial files with old vendor name
@@ -1588,11 +1588,11 @@ class TestArgumentParsing:
         with patch(
             "sys.argv", ["spoolman2slicer.py", "--dir", "/tmp", "-s", "orcaslicer"]
         ):
-            spoolman2slicer.args, _ = spoolman2slicer.parse_args()
+            spoolman2slicer.ARGS, _ = spoolman2slicer.parse_args()
             assert spoolman2slicer.get_config_suffix() == ["json", "info"]
 
         with patch(
             "sys.argv", ["spoolman2slicer.py", "--dir", "/tmp", "-s", "prusaslicer"]
         ):
-            spoolman2slicer.args, _ = spoolman2slicer.parse_args()
+            spoolman2slicer.ARGS, _ = spoolman2slicer.parse_args()
             assert spoolman2slicer.get_config_suffix() == ["ini"]
